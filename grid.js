@@ -1,5 +1,5 @@
 export class Grid {
-  constructor(size = 64, width = 100, height = 50, penColor = "silver", penwidth = 1) {
+  constructor(size = 8, width = 200, height = 150, penColor = "silver", penwidth = 1) {
     this.size = size;
     this.width = width * size;
     this.height = height * size;
@@ -7,8 +7,9 @@ export class Grid {
     this.penwidth = penwidth;
     this.lineDash = [5, 1];
     this.isGrid = true;
+    this.refresh = true;
   }
-  update(ctx) {}
+  update(ctx) { }
   draw(context) {
     this.drawGrid(context.ctx);
   }
@@ -36,6 +37,6 @@ export class Grid {
     ctx.setLineDash([]);
     ctx.restore();
   }
-  drawGridXY(ctx) {}
-  drawGridSize(ctx) {}
+  drawGridXY(ctx) { }
+  drawGridSize(ctx) { }
 }
