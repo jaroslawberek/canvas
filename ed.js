@@ -77,11 +77,13 @@ class Edytor {
     this.lastTime = timestamp;
     this.accumulator += delta;
     if (this.accumulator >= 16) {
+      Utils.cl("d")
       this.appUpdate(delta);
       // if (this.needsRedraw) {
       this.appDraw(delta);
       this.needsRedraw = false;
       //}
+      this.accumulator = 0;
     }
     window.requestAnimationFrame(this.appLoop);
   }
@@ -393,7 +395,7 @@ class Edytor {
   }
 }
 
-const e = new Edytor(16);
+const e = new Edytor(32);
 
 
 
