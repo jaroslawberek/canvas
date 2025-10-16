@@ -3,22 +3,32 @@ import { Camera } from "./classes/Camera.js";
 import { InputManager } from "./classes/InputManager.js";
 import { Physics } from "./classes/Physics.js";
 import { Utils } from "./classes/utils.js";
+import { TileObject } from "./TitleObj.js";
 class Edytor {
-  constructor(tittleSize = 16, width = 400, height = 400) {
+  constructor(tittleSize = 16, width = 150, height = 150) {
     this.wordWidth = 2000;
     this.wordHeight = 2000;
+    this.width = width;
+    this.height = height;
     this.canvas = document.querySelector("#canvas");
-    this.canvas.width = window.innerWidth;
+   
+    this.canvas.width = window.innerWidth*0.73;    
     this.canvas.height = window.innerHeight;
     this.context2d = this.canvas.getContext("2d");
     this.bgColor = "#e7e5e5ff"; // domyślny kolor tła
     this.tittleSize = tittleSize;
     this.needsRedraw = true;
+    this.tileObject = null;
     this.grid = null;
     this.objects = [];
+    this.selectedGrid = null;
+    this.objGrid = null
     this.angle = 0;
     this.accumulator = 0;
     this.lastTime = 0;
+    this.selectTitleColor = "blue";
+    this.selectTitleWidth = 1;
+    this.selectedPos = [null, null]
     this.input = new InputManager(this.canvas, this);
     // 👇 ważne — związanie kontekstu
     this.appLoop = this.appLoop.bind(this);
@@ -27,25 +37,51 @@ class Edytor {
       ctx: this.context2d,
       wordWidth: this.wordWidth,
       wordHeight: this.wordHeight,
+      width: this.width,
+      height: this.height,
+      tittleSize: this.tittleSize,
+      objGrid: this.objGrid,
+      objects: this.objects,
+
     };
     this.init();
   }
 
   init() {
+   
+    this.objGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     this.grid = new Grid(this.tittleSize, this.width, this.height);
-    this.objects.push(this.grid);
+    this.tileObject = new TileObject(this.tittleSize,50,50);
+    Utils.cl(this.objGrid);
+    // this.tileObject.selectedTile.tableindex = 0;
     window.requestAnimationFrame(this.appLoop);
   }
   clear(ctx) {
     ctx.fillStyle = this.bgColor;
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
+
   appUpdate(dt) {
     const mouse = this.input.mouse;
     const keys = this.input.keys;
-    //this.test_keys(keys);
-    // this.test_mouse(mouse, keys);
-    //this.calculateTittlePos(mouse, keys)
+
+    if (mouse.left && keys["Shift"]) {
+      this.deleteTile(mouse.x, mouse.y, this.tittleSize)
+    }
+    else if (mouse.left) {
+      this.addTile(mouse.x, mouse.y, this.tittleSize)
+    }
+    else if (mouse.right) {
+      this.setSelectionRange(mouse.x, mouse.y, this.tittleSize)
+    }
+
+    if (mouse.right === false && this.selectedPos[1] !== null) {
+      this.insertSeletedArea();
+      this.selectedPos = [null, null];
+      this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    }
+     this.tileObject.update(dt, this.context);
   }
 
   appDraw(dt) {
@@ -53,23 +89,101 @@ class Edytor {
     const mouse = this.input.mouse;
     const keys = this.input.keys;
     this.clear(ctx);
-    this.objects.forEach((obj) => {
-      obj.draw(this.context);
-    });
-
-    this.drawSelectTitel(mouse, ctx);
+    this.grid.draw(this.context)
+    this.drawTitleGrid();
+    if (this.selectedPos[1] !== null) {
+      this.selctTitlesRange(this.width, this.height, this.tittleSize);
+    }
+    this.strokeSelectTitel(mouse, ctx);
+    this.tileObject.draw(dt, this.context);
   }
 
-  drawSelectTitel(mouse, ctx) {
-    ctx.strokeStyle = "blue";
-    ctx.lineWidth = 1;
-    const titleX = Math.floor(mouse.x / this.tittleSize);
-    const titley = Math.floor(mouse.y / this.tittleSize);
-    const x = titleX == 0 ? 0 : titleX * this.tittleSize;
-    const y = titley == 0 ? 0 : titley * this.tittleSize;
+  insertSeletedArea() {
+    for (let tx = 0; tx < this.width; tx++) {
+      for (let ty = 0; ty < this.height; ty++) {
+        if (!this.selectedGrid[tx][ty])
+          continue;
+        this.objGrid[tx][ty] =  this.tileObject.selectedTile.tableindex;
+      }
+    }
+  }
+
+  drawTitleGrid() {
+    const ctx = this.context2d;
+     for (let tx = 0; tx < this.width; tx++) {
+      for (let ty = 0; ty < this.height; ty++) {
+        if(this.objGrid[tx][ty]===null) continue;   
+        let y = ty === 0 ? 0 : ty * this.tittleSize;
+        let x = tx === 0 ? 0 : tx * this.tittleSize;
+       // Utils.cl(this.tileObject.selectedTile);
+       // if(this.tileObject.selectedTile)
+         this.tileObject.drawTileByIndex(this.context2d, this.tileObject.image, this.objGrid[tx][ty], this.tittleSize, this.tittleSize, y,x);
+       // TileObject.drawTitleFill(ctx, y, x, this.tittleSize);
+      }
+    }
+  }
+  
+  setSelectionRange(mouseX, mouseY, tSize) {
+    const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
+    (this.selectedPos[0] === null) ? this.selectedPos[0] = [titleX, titleY] : this.selectedPos[1] = [titleX, titleY];
+  }
+
+  selctTitlesRange(width, height, tSize) {
+    const ctx = this.context2d;
+    for (let y = this.selectedPos[0][1]; y <= this.selectedPos[1][1]; y++){ 
+      for (let x = this.selectedPos[0][0]; x <= this.selectedPos[1][0]; x++) 
+        this.selectedGrid[y][x] = 1;  
+    }      
+      for (let tx = 0; tx < this.width; tx++) {
+        for (let ty = 0; ty < this.height; ty++) {
+          if(!this.selectedGrid[tx][ty])   
+            continue;
+         let y = ty === 0 ? 0 : ty * tSize;
+         let x = tx === 0 ? 0 : tx * tSize;
+          TileObject.drawSelectedFill(ctx, y, x, tSize);
+        }
+      }
+  }
+
+  strokeSelectTitel(mouse, ctx) {
+    const keys = this.input.keys;
+    if (keys["Shift"] === true)
+      ctx.strokeStyle = "red";
+    else if (mouse.right === true)
+      ctx.strokeStyle = "yellow";
+    else
+      ctx.strokeStyle = this.selectTitleColor;
+    ctx.lineWidth = this.selectTitleWidth;
+    const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tittleSize);
     ctx.strokeRect(x, y, this.tittleSize, this.tittleSize);
   }
 
+  addTile(mouseX, mouseY, tSize) {
+    const ctx = this.context2d;
+    const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
+    if (!this.objGrid[titleY][titleX]) {
+      if(this.tileObject.selectedTile.tableindex>-1)
+      this.objGrid[titleY][titleX] = this.tileObject.selectedTile.tableindex;
+    }
+    //Utils.cl(this.objGrid, true);
+  }
+
+  deleteTile(mouseX, mouseY, tSize) {
+    const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
+    if (this.objGrid[titleY][titleX]>-1)       
+      this.objGrid[titleY][titleX] = null;    
+  }
+
+  // getTitleCoordinate(x, y, tSize) {
+  //   const titleX = Math.floor(x / tSize);
+  //   const titleY = Math.floor(y / tSize);
+  //   return {
+  //     titleX: titleX,
+  //     titleY: titleY,
+  //     x: titleX == 0 ? 0 : titleX * tSize,
+  //     y: titleY == 0 ? 0 : titleY * tSize
+  //   }
+  // }
 
   appLoop(timestamp) {
     if (!this.lastTime) this.lastTime = timestamp;
@@ -77,21 +191,18 @@ class Edytor {
     this.lastTime = timestamp;
     this.accumulator += delta;
     if (this.accumulator >= 16) {
-      Utils.cl("d")
       this.appUpdate(delta);
       // if (this.needsRedraw) {
       this.appDraw(delta);
-      this.needsRedraw = false;
+      //this.needsRedraw = false;
       //}
       this.accumulator = 0;
     }
     window.requestAnimationFrame(this.appLoop);
   }
-  // this.test(ctx);
-  //this.drawRects(ctx);
-  //this.drawAll(ctx);
-  //this.drawTextExamples(ctx)
-  //this.textOnBackground(ctx);
+}
+
+const e = new Edytor();
 
   /********************************************FUNKCJE DO TESTOW*****************************************************************/
   /**********************************************************************************************/
@@ -100,7 +211,7 @@ class Edytor {
   /*************************************************************************************************************/
   /*************************************************************************************************************/
   /*************************************************************************************************************/
-  textOnBackground(ctx) {
+  /*textOnBackground(ctx) {
     ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; // półprzezroczyste tło
     ctx.fillRect(10, 10, 200, 40);
 
@@ -228,9 +339,7 @@ class Edytor {
     );
   }
 
-  /**
-   * Rysuje tekst po łuku między kątami startAngle i endAngle
-   */
+
   drawTextOnArc(text, centerX, centerY, radius, startAngle, endAngle, font, color) {
     const ctx = this.context2d;
     ctx.save();
@@ -312,7 +421,7 @@ class Edytor {
     ctx.restore();
 
     // 🔹 4. Prostokąt z powtarzanym wzorem
-    /* const pattern = ctx.createPattern(this.patternImage, "repeat");
+     const pattern = ctx.createPattern(this.patternImage, "repeat");
      ctx.fillStyle = pattern;
      ctx.strokeStyle = "#333";
      ctx.lineWidth = 3;
@@ -328,7 +437,7 @@ class Edytor {
      ctx.fillText("1️⃣ Zwykły prostokąt", 40, 165);
      ctx.fillText("2️⃣ Zaokrąglony prostokąt", 250, 165);
      ctx.fillText("3️⃣ Zaokrąglony z cieniem", 500, 165);
-     ctx.fillText("4️⃣ Wzór (createPattern)", 150, 425);*/
+     ctx.fillText("4️⃣ Wzór (createPattern)", 150, 425);
   }
 
   // 🟢 Szybka metoda do rysowania zaokrąglonego prostokąta (v1)
@@ -388,14 +497,13 @@ class Edytor {
       Utils.cl(`poprzednio ${mouse.clickHistory[0]}`)
       Utils.cl(`history click ${mouse.clickHistory}`)
 
-      /*
-       */
+    
     }
 
   }
 }
+*/
 
-const e = new Edytor(32);
 
 
 
@@ -405,3 +513,13 @@ const e = new Edytor(32);
  *****************************************************/
 //reakca na klawisze. Uwaga na wielkosc liter i polskie znaki
 
+
+
+
+// const index = this.objects.findIndex(obj => {
+      //   return (obj.x === x && obj.y === y);
+      // })
+
+
+      
+// if (mouse.right === false && this.selectedGrid.some(row => row.some(cell => cell === "1"))) 

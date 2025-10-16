@@ -1,5 +1,5 @@
 export class Grid {
-  constructor(size = 8, width = 200, height = 150, penColor = "silver", penwidth = 1) {
+  constructor(size = 8, width = 20, height = 15, penColor = "silver", penwidth = 1) {
     this.size = size;
     this.width = width * size;
     this.height = height * size;

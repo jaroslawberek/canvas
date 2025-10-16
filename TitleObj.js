@@ -1,0 +1,148 @@
+import { Utils } from "./classes/utils.js";
+import { Grid } from "./grid.js";
+import { InputManager } from "./classes/InputManager.js";
+export class TileObject {
+    constructor(tileSize, width, height) {
+
+        this.canvas = document.querySelector("#canvas2");
+        this.context2d = this.canvas.getContext("2d");
+
+        this.canvas.width = window.innerWidth * 0.322;
+        this.canvas.height = window.innerHeight;
+        this.width = width;
+        this.height = height;
+        this.tileSize = tileSize;
+        this.bgColor = "#d1ceceff"; // domyślny kolor tła
+        this.selectTileColor = "green";
+        this.selectTileWidth = 1;
+        this.image = null;
+        this.grid = null;
+        this.table = [];
+        this.selectedTile = { tableindex: 0 };
+        this.input = new InputManager(this.canvas, this);
+        this.context = {
+            canvas: this.canvas,
+            ctx: this.context2d,
+            width: this.width,
+            height: this.height,
+            tileSize: this.tileSize,
+        };
+        this.init();
+    }
+    async init() {
+        this.image = await this.loadImage("kafelkiNowe.png"); // <- podmień na własny plik
+        this.grid = new Grid(this.tileSize, this.width, this.height);
+        this.selectedTile.tableindex = 0;
+        // Utils.cl("FFFFFFFFFF")
+        this.indexTileset(this.image);
+        // this.selectedTile = { tableindex: 0 }
+    }
+    loadImage(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
+        });
+    }
+    clear(ctx) {
+        this.context2d.fillStyle = this.bgColor;
+        this.context2d.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+    update(dt, appContext) {
+        const mouse = this.input.mouse;
+        const keys = this.input.keys;
+        if (mouse.left) {
+            //Utils.cl(this.table, true);
+            this.selectTile(mouse);
+        }
+    }
+    draw(dt, appContext) {
+        const mouse = this.input.mouse;
+        this.clear(this.context2d);
+        this.grid.draw(this.context);
+        this.context2d.drawImage(this.image, 0, 0);
+        this.strokeSelectTitel(mouse, this.context2d);
+
+    }
+    indexTileset(image) {
+        const cols = Math.floor(image.width / this.tileSize);
+        const rows = Math.floor(image.height / this.tileSize);
+        this.table = [];
+
+        let index = 0;
+        for (let y = 0; y < rows; y++) {
+            const row = [];
+            for (let x = 0; x < cols; x++) {
+                row.push(index);
+                index++;
+            }
+            this.table.push(row);
+        }
+
+
+    }
+    selectTile(mouse) {
+        const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tileSize);
+        this.selectedTile = { x: x, y: y, titleX: titleX, titleY: titleY, tableindex: this.table[titleY][titleX] }
+        Utils.cl(this.table, true);
+        Utils.cl(this.selectedTile);
+        this.drawTileByIndex(this.context2d, this.image, this.selectedTile.tableindex, this.tileSize, this.tileSize, 50, 100)
+
+    }
+    strokeSelectTitel(mouse, ctx) {
+        ctx.strokeStyle = this.selectTitleColor;
+        ctx.lineWidth = this.selectTitleWidth;
+        const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tileSize);
+        ctx.strokeRect(x, y, this.tileSize, this.tileSize);
+    }
+    drawTileByIndex(ctx, image, index, tileW, tileH, posX, posY) {
+        const cols = Math.floor(image.width / tileW);
+        const tileX = index % cols;
+        const tileY = Math.floor(index / cols);
+        // Utils.cl(index)
+        // Utils.cl(tileX)
+        // Utils.cl(tileY)
+        ctx.drawImage(
+            image,
+            tileX * tileW,
+            tileY * tileH,
+            tileW,
+            tileH,
+            posX,
+            posY,
+            tileW,
+            tileH
+        );
+    }
+    static strokeTitlePosition(ctx, status, titleCoordinate, titleSize) {
+        if (status === "deleteTitle")
+            ctx.strokeStyle = "red";
+        else if (status === "selectTitles")
+            ctx.strokeStyle = "yellow";
+        else
+            ctx.strokeStyle = this.selectTitleColor;
+        ctx.strokeStyle = this.selectTitleColor;
+        ctx.lineWidth = this.selectTitleWidth;
+        const { x, y, titleX, titleY } = titleCoordinate;
+        ctx.strokeRect(x, y, titleSize, titleSize);
+    }
+    static drawTitleFill(ctx, x, y, titleSize) {
+        ctx.fillStyle = "orange";
+        ctx.fillRect(x, y, titleSize, titleSize);
+    }
+    static drawSelectedFill(ctx, x, y, titleSize) {
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.fillRect(x, y, titleSize, titleSize);
+    }
+    static getTitleCoordinate(x, y, tSize) {
+        const titleX = Math.floor(x / tSize);
+        const titleY = Math.floor(y / tSize);
+        return {
+            titleX: titleX,
+            titleY: titleY,
+            x: titleX == 0 ? 0 : titleX * tSize,
+            y: titleY == 0 ? 0 : titleY * tSize
+        }
+    }
+}
