@@ -83,7 +83,7 @@ export class InputManager {
             this.mouse.wheelDelta = e.deltaY;
         });
         // ⚠️ Blokuj menu kontekstowe (prawy przycisk)
-        //this.canvas.addEventListener("contextmenu", e => e.preventDefault());
+        this.canvas.addEventListener("contextmenu", e => e.preventDefault());
     }
 
     /** Czy dany klawisz jest wciśnięty */

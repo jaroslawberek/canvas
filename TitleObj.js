@@ -27,15 +27,18 @@ export class TileObject {
             height: this.height,
             tileSize: this.tileSize,
         };
-        this.init();
+        this.image = new Image();
+        this.image.src = "kafelkiNowe.png";
+        this.image.onload = () => {
+
+            this.init();
+        }
     }
-    async init() {
-        this.image = await this.loadImage("kafelkiNowe.png"); // <- podmień na własny plik
+    init() {
+        //this.image = await this.loadImage("kafelkiNowe.png"); // <- podmień na własny plik
         this.grid = new Grid(this.tileSize, this.width, this.height);
         this.selectedTile.tableindex = 0;
-        // Utils.cl("FFFFFFFFFF")
         this.indexTileset(this.image);
-        // this.selectedTile = { tableindex: 0 }
     }
     loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -135,7 +138,7 @@ export class TileObject {
         ctx.fillStyle = "rgba(0,0,0,0.3)";
         ctx.fillRect(x, y, titleSize, titleSize);
     }
-    static getTitleCoordinate(x, y, tSize) {
+    static getTitleCoordinate(x, y, tSize, lockedAxle = "none") {
         const titleX = Math.floor(x / tSize);
         const titleY = Math.floor(y / tSize);
         return {

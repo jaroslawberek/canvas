@@ -28,7 +28,11 @@ class Edytor {
     this.lastTime = 0;
     this.selectTitleColor = "blue";
     this.selectTitleWidth = 1;
-    this.selectedPos = [null, null]
+    this.selectedPos = [null, null];
+    this.selectPurpose = "none";
+    this.lockedAxle="none";
+    this.lockedTileY = null;
+    this.lockedTileX = null;
     this.input = new InputManager(this.canvas, this);
     // 👇 ważne — związanie kontekstu
     this.appLoop = this.appLoop.bind(this);
@@ -46,7 +50,7 @@ class Edytor {
     };
     this.init();
   }
-
+  
   init() {
    
     this.objGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
@@ -73,11 +77,23 @@ class Edytor {
       this.addTile(mouse.x, mouse.y, this.tittleSize)
     }
     else if (mouse.right) {
+      if(keys["Shift"]) 
+        this.selectPurpose="clear";
+      else
+        this.selectPurpose="insert";
       this.setSelectionRange(mouse.x, mouse.y, this.tittleSize)
     }
-
+    if(mouse.left && keys["x"]){
+      this.drawOnAxle="x";
+    }
+    else if(mouse.left && keys["y"]){
+      this.drawOnAxle="y";
+    }
+    else{
+      this.drawOnAxle="all";
+    }
     if (mouse.right === false && this.selectedPos[1] !== null) {
-      this.insertSeletedArea();
+      this.resolveSeletedArea();
       this.selectedPos = [null, null];
       this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     }
@@ -93,18 +109,24 @@ class Edytor {
     this.drawTitleGrid();
     if (this.selectedPos[1] !== null) {
       this.selctTitlesRange(this.width, this.height, this.tittleSize);
+       //this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     }
     this.strokeSelectTitel(mouse, ctx);
     this.tileObject.draw(dt, this.context);
   }
 
-  insertSeletedArea() {
+  resolveSeletedArea() {
     for (let tx = 0; tx < this.width; tx++) {
       for (let ty = 0; ty < this.height; ty++) {
         if (!this.selectedGrid[tx][ty])
           continue;
+        if(this.selectPurpose==="clear")
+        this.objGrid[tx][ty] =  null;
+       else if(this.selectPurpose==="insert")
         this.objGrid[tx][ty] =  this.tileObject.selectedTile.tableindex;
+       else if(this.selectPurpose="select"){}
       }
+     
     }
   }
 
@@ -130,19 +152,22 @@ class Edytor {
 
   selctTitlesRange(width, height, tSize) {
     const ctx = this.context2d;
-    for (let y = this.selectedPos[0][1]; y <= this.selectedPos[1][1]; y++){ 
-      for (let x = this.selectedPos[0][0]; x <= this.selectedPos[1][0]; x++) 
-        this.selectedGrid[y][x] = 1;  
-    }      
-      for (let tx = 0; tx < this.width; tx++) {
-        for (let ty = 0; ty < this.height; ty++) {
-          if(!this.selectedGrid[tx][ty])   
-            continue;
-         let y = ty === 0 ? 0 : ty * tSize;
-         let x = tx === 0 ? 0 : tx * tSize;
-          TileObject.drawSelectedFill(ctx, y, x, tSize);
-        }
+    //tzaznaczenie moglo zaczac sie od prawej do lewej lub od lewej do prawej 
+    //i to samo gora doł
+    let y1 = Math.min(this.selectedPos[0][1],this.selectedPos[1][1]);
+    let y2 = Math.max(this.selectedPos[0][1],this.selectedPos[1][1]);
+    let x1 = Math.min(this.selectedPos[0][0],this.selectedPos[1][0]);
+    let x2 = Math.max(this.selectedPos[0][0],this.selectedPos[1][0]);
+    //czyszcze bufor zaznaczenia zanim znowu wylicze zakres zaznaczenia
+    this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    for (let ty =  y1; ty <= y2; ty++){ 
+      for (let tx = x1; tx <= x2; tx++){
+        this.selectedGrid[ty][tx] = 1; //ustawiam w buforze pole...
+        let y = ty === 0 ? 0 : ty * tSize;
+        let x = tx === 0 ? 0 : tx * tSize;  
+       TileObject.drawSelectedFill(ctx, x, y, tSize); // rysuje zaznaczeine
       }
+    }      
   }
 
   strokeSelectTitel(mouse, ctx) {
@@ -160,12 +185,19 @@ class Edytor {
 
   addTile(mouseX, mouseY, tSize) {
     const ctx = this.context2d;
-    const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
+    let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
+    if(!this.lockedTileX && this.drawOnAxle==="y")   //z    
+      this.lockedTileX = titleX;
+    else  if(!this.lockedTileY && this.drawOnAxle==="x") 
+      this.lockedTileY = titleY;
+    else if(this.drawOnAxle==="all") 
+      this.lockedTileX=this.lockedTileY=null;
+    titleX = this.lockedTileX ? this.lockedTileX : titleX;
+    titleY = this.lockedTileY ? this.lockedTileY : titleY;
     if (!this.objGrid[titleY][titleX]) {
       if(this.tileObject.selectedTile.tableindex>-1)
       this.objGrid[titleY][titleX] = this.tileObject.selectedTile.tableindex;
     }
-    //Utils.cl(this.objGrid, true);
   }
 
   deleteTile(mouseX, mouseY, tSize) {
