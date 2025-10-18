@@ -19,6 +19,7 @@ class Edytor {
     this.tittleSize = tittleSize;
     this.needsRedraw = true;
     this.tileObject = null;
+    this.objBuffer = null;
     this.grid = null;
     this.objects = [];
     this.selectedGrid = null;
@@ -55,9 +56,10 @@ class Edytor {
    
     this.objGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    this.objBuffer = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     this.grid = new Grid(this.tittleSize, this.width, this.height);
     this.tileObject = new TileObject(this.tittleSize,50,50);
-    Utils.cl(this.objGrid);
+    //Utils.cl(this.objGrid);
     // this.tileObject.selectedTile.tableindex = 0;
     window.requestAnimationFrame(this.appLoop);
   }
@@ -69,16 +71,28 @@ class Edytor {
   appUpdate(dt) {
     const mouse = this.input.mouse;
     const keys = this.input.keys;
-
+    //Utils.cl(keys);
+    if(keys["Escape"]&&(this.selectPurpose==="select")) {
+      this.objBuffer = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+      this.selectPurpose="select" ;
+    }
     if (mouse.left && keys["Shift"]) {
       this.deleteTile(mouse.x, mouse.y, this.tittleSize)
     }
     else if (mouse.left) {
+      if(this.selectPurpose==="select"){
+        //this.insertBuffer();
+        this.calibrateBuffer(mouse.x, mouse.y, this.tittleSize);
+        this.insertBuffer();
+        //this.selectPurpose="none";
+      }
       this.addTile(mouse.x, mouse.y, this.tittleSize)
     }
     else if (mouse.right) {
       if(keys["Shift"]) 
         this.selectPurpose="clear";
+      else if(keys["Control"]) 
+        this.selectPurpose="select";
       else
         this.selectPurpose="insert";
       this.setSelectionRange(mouse.x, mouse.y, this.tittleSize)
@@ -92,7 +106,7 @@ class Edytor {
     else{
       this.drawOnAxle="all";
     }
-    if (mouse.right === false && this.selectedPos[1] !== null) {
+    if (mouse.right === false && this.selectedPos[1] !== null && this.drawOnAxle==="all") {
       this.resolveSeletedArea();
       this.selectedPos = [null, null];
       this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
@@ -107,14 +121,62 @@ class Edytor {
     this.clear(ctx);
     this.grid.draw(this.context)
     this.drawTitleGrid();
+    this.drawBuffer();
     if (this.selectedPos[1] !== null) {
       this.selctTitlesRange(this.width, this.height, this.tittleSize);
        //this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    }
+
+    if(this.drawOnAxle!="all"){
+      //xxxthis.selectTileAxle(this.lockedTileX||this.lockedTileY);ss
     }
     this.strokeSelectTitel(mouse, ctx);
     this.tileObject.draw(dt, this.context);
   }
 
+
+  calibrateBuffer(mouseX, mouseY, tSize){
+    let newX = -1;
+    let newY = -1;
+    let absX = -1;
+    let absY = -1;
+    let temp =  Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
+     for (let ty = 0; ty < this.width; ty++) {
+      for (let tx = 0; tx < this.height; tx++) {
+        if (!this.objBuffer[ty][tx])
+          continue; 
+        if(absX==-1 && absY==-1) {
+          absX = Math.abs(titleX-tx);
+          absY = Math.abs(titleY-ty);         
+        } 
+        if(absY!==0) newY = titleY>ty ? ty+(absY) : ty-(absY)  ;   
+        else newY = ty;     
+        if(absX!==0) newX = titleX>tx ? tx+(absX) : tx-(absX)  ; 
+        else newX = tx; 
+         temp[newY][newX] = this.objBuffer[ty][tx];  
+           
+      }
+    }
+    this.objBuffer = [...temp]
+  }
+
+
+ insertBuffer(){ 
+   Utils.cl(this.objBuffer);
+    for (let tx = 0; tx < this.width; tx++) {
+      for (let ty = 0; ty < this.height; ty++) {
+        if (!this.objBuffer[tx][ty])
+          continue;
+        // Utils.cl("insert buffer " +  this.objBuffer[tx][ty])
+        this.objGrid[tx][ty] =  this.objBuffer[tx][ty];
+      //   Utils.cl( this.objGrid[tx][ty])
+      } 
+    }
+     
+      
+    this.objBuffer =  Array.from({ length: this.height }, () => Array(this.width).fill(null));
+ }
   resolveSeletedArea() {
     for (let tx = 0; tx < this.width; tx++) {
       for (let ty = 0; ty < this.height; ty++) {
@@ -123,11 +185,15 @@ class Edytor {
         if(this.selectPurpose==="clear")
         this.objGrid[tx][ty] =  null;
        else if(this.selectPurpose==="insert")
-        this.objGrid[tx][ty] =  this.tileObject.selectedTile.tableindex;
-       else if(this.selectPurpose="select"){}
+        this.objGrid[tx][ty] =  this.tileObject.selectedTile.tableindex;     
+       else if(this.selectPurpose="select"){
+          this.objBuffer[tx][ty] = this.objGrid[tx][ty];        
+       }
       }
+      
      
     }
+   // Utils.cl(this.objBuffer);
   }
 
   drawTitleGrid() {
@@ -137,14 +203,22 @@ class Edytor {
         if(this.objGrid[tx][ty]===null) continue;   
         let y = ty === 0 ? 0 : ty * this.tittleSize;
         let x = tx === 0 ? 0 : tx * this.tittleSize;
-       // Utils.cl(this.tileObject.selectedTile);
-       // if(this.tileObject.selectedTile)
          this.tileObject.drawTileByIndex(this.context2d, this.tileObject.image, this.objGrid[tx][ty], this.tittleSize, this.tittleSize, y,x);
-       // TileObject.drawTitleFill(ctx, y, x, this.tittleSize);
       }
     }
   }
-  
+  drawBuffer() {
+    const ctx = this.context2d;
+     for (let tx = 0; tx < this.width; tx++) {
+      for (let ty = 0; ty < this.height; ty++) {
+        if(this.objBuffer[tx][ty]===null) continue;   
+        let y = ty === 0 ? 0 : ty * this.tittleSize;
+        let x = tx === 0 ? 0 : tx * this.tittleSize;
+         TileObject.drawSelectedFill(ctx, y, x, this.tittleSize, "rgba(209, 50, 50, 0.3");
+         //this.tileObject.drawTileByIndex(this.context2d, this.tileObject.image, this.objGrid[tx][ty], this.tittleSize, this.tittleSize, y,x);
+      }
+    }
+  }
   setSelectionRange(mouseX, mouseY, tSize) {
     const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
     (this.selectedPos[0] === null) ? this.selectedPos[0] = [titleX, titleY] : this.selectedPos[1] = [titleX, titleY];
@@ -169,7 +243,20 @@ class Edytor {
       }
     }      
   }
-
+ /* selectTileAxle(aLocked,y){
+    if(this.drawOnAxle=="x")
+    for (let x =  0; x < this.width; x++){ 
+        this.selectedGrid[x][aLocked] = 1;
+        Utils.cl (this.selectedGrid[x]);
+        TileObject.drawSelectedFill(this.context2d, x * this.tittleSize, aLocked * this.tittleSize , this.tittleSizex); // rysuje zaznaczeine
+      
+    }
+    else
+      for (let x =  0; x < this.width; x++){ 
+        this.selectedGrid[aLocked][x] = 1;
+        Utils.cl("2");
+      }     
+  }*/
   strokeSelectTitel(mouse, ctx) {
     const keys = this.input.keys;
     if (keys["Shift"] === true)
@@ -181,15 +268,26 @@ class Edytor {
     ctx.lineWidth = this.selectTitleWidth;
     const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tittleSize);
     ctx.strokeRect(x, y, this.tittleSize, this.tittleSize);
+    if(this.objBuffer && this.selectPurpose=="select"){
+    //  Utils.cl("d")
+      this.tileObject.drawWithBuffer(ctx,mouse.x, mouse.y, this.objBuffer, this.width, this.height, this.tittleSize, this.tittleSize)
+    }
+    else if(this.tileObject.selectedTile.tableindex>-1){
+       this.tileObject.drawTileByIndex(this.context2d, this.tileObject.image, this.tileObject.selectedTile.tableindex, this.tittleSize, this.tittleSize, x,y);
+    }
   }
 
   addTile(mouseX, mouseY, tSize) {
     const ctx = this.context2d;
     let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
-    if(!this.lockedTileX && this.drawOnAxle==="y")   //z    
+    if(!this.lockedTileX && this.drawOnAxle==="y"){
       this.lockedTileX = titleX;
-    else  if(!this.lockedTileY && this.drawOnAxle==="x") 
+      //xthis.selectTileAxle(this.lockedTileX, titleY);
+    }    
+    else  if(!this.lockedTileY && this.drawOnAxle==="x"){
       this.lockedTileY = titleY;
+      //this.selectTileAxle(this.lockedTileY, titleX);
+    } 
     else if(this.drawOnAxle==="all") 
       this.lockedTileX=this.lockedTileY=null;
     titleX = this.lockedTileX ? this.lockedTileX : titleX;

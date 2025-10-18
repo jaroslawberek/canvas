@@ -30,14 +30,13 @@ export class TileObject {
         this.image = new Image();
         this.image.src = "kafelkiNowe.png";
         this.image.onload = () => {
-
-            this.init();
         }
+        this.init();
     }
     init() {
         //this.image = await this.loadImage("kafelkiNowe.png"); // <- podmień na własny plik
         this.grid = new Grid(this.tileSize, this.width, this.height);
-        this.selectedTile.tableindex = 0;
+        this.selectedTile.tableindex = -1;
         this.indexTileset(this.image);
     }
     loadImage(src) {
@@ -56,7 +55,6 @@ export class TileObject {
         const mouse = this.input.mouse;
         const keys = this.input.keys;
         if (mouse.left) {
-            //Utils.cl(this.table, true);
             this.selectTile(mouse);
         }
     }
@@ -88,9 +86,9 @@ export class TileObject {
     selectTile(mouse) {
         const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tileSize);
         this.selectedTile = { x: x, y: y, titleX: titleX, titleY: titleY, tableindex: this.table[titleY][titleX] }
-        Utils.cl(this.table, true);
+        //Utils.cl(this.table, true);
         Utils.cl(this.selectedTile);
-        this.drawTileByIndex(this.context2d, this.image, this.selectedTile.tableindex, this.tileSize, this.tileSize, 50, 100)
+        // this.drawTileByIndex(this.context2d, this.image, this.selectedTile.tableindex, this.tileSize, this.tileSize, 50, 100)
 
     }
     strokeSelectTitel(mouse, ctx) {
@@ -118,6 +116,22 @@ export class TileObject {
             tileH
         );
     }
+
+    drawWithBuffer(ctx, mouseX, mouseY, buffer, width, height, tileW, tileH) {
+        let first = null;
+        for (let tx = 0; tx < width; tx++) {
+            for (let ty = 0; ty < height; ty++) {
+                if (buffer[tx][ty] === null) continue;
+                let y = ty === 0 ? 0 : ty * tileW;
+                let x = tx === 0 ? 0 : tx * tileH;
+                if (first === null) {
+                    first = { tx: tx, ty: ty, x: y, y: x };
+                }
+                this.drawTileByIndex(ctx, this.image, buffer[tx][ty], tileW, tileH, y + (mouseX - first.x), x + (mouseY - first.y));
+            }
+        }
+    }
+
     static strokeTitlePosition(ctx, status, titleCoordinate, titleSize) {
         if (status === "deleteTitle")
             ctx.strokeStyle = "red";
@@ -134,8 +148,11 @@ export class TileObject {
         ctx.fillStyle = "orange";
         ctx.fillRect(x, y, titleSize, titleSize);
     }
-    static drawSelectedFill(ctx, x, y, titleSize) {
-        ctx.fillStyle = "rgba(0,0,0,0.3)";
+    static drawSelectedFill(ctx, x, y, titleSize, color = null) {
+        if (!color)
+            ctx.fillStyle = "rgba(0,0,0,0.3)";
+        else
+            ctx.fillStyle = color;
         ctx.fillRect(x, y, titleSize, titleSize);
     }
     static getTitleCoordinate(x, y, tSize, lockedAxle = "none") {
