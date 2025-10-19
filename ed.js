@@ -222,7 +222,16 @@ class Edytor {
     }
 
     this.tileObject.update(dt, this.context);
-    Utils.cl(this.camera, true);
+    //Utils.cl(this.camera, true);
+    if (!this._camDebugTimer || performance.now() - this._camDebugTimer > 250) {
+      console.log(
+        `%c📷 Camera → x:${cam.x.toFixed(1)} y:${cam.y.toFixed(
+          1
+        )} scale:${cam.scale.toFixed(2)}`,
+        "color: cyan; font-weight: bold;"
+      );
+      this._camDebugTimer = performance.now();
+    }
   }
 
   rollbackTiles() {
