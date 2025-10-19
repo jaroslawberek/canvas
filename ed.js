@@ -8,7 +8,7 @@ import { eventBus } from "./classes/EventBus.js";
 import { Queue } from "./classes/queue.js";
 
 class Edytor {
-  constructor(tittleSize = 16, width = 250, height = 250) {
+  constructor(tittleSize = 16, width = 1550, height = 1550) {
     this.wordWidth = 2000;
     this.wordHeight = 2000;
     this.width = width;
@@ -43,6 +43,12 @@ class Edytor {
     this.input = new InputManager(this.canvas, this);
     // 👇 ważne — związanie kontekstu
     this.appLoop = this.appLoop.bind(this);
+    this.camera = new Camera(
+      this.width,
+      this.height,
+      this.wordWidth,
+      this.wordHeight
+    );
     this.context = {
       canvas: this.canvas,
       ctx: this.context2d,
@@ -53,11 +59,23 @@ class Edytor {
       tittleSize: this.tittleSize,
       objGrid: this.objGrid,
       objects: this.objects,
+      camera: this.camera,
     };
     this.init();
   }
+  resizeCanvas() {
+    this.camera.resize(this.width, this.height);
+  }
 
   init() {
+    this.cameraTarget = {
+      x: 0,
+      y: 0,
+      width: 10,
+      height: 10,
+    };
+    //this.camera.follow(this.cameraTarget);
+    //this.camera.mode = "manual"; // 👈 nowy tryb dla edytora
     this.objGrid = Array.from({ length: this.height }, () =>
       Array(this.width).fill(null)
     );
@@ -83,6 +101,7 @@ class Edytor {
       this.onTileObjectSelectedTiles.bind(this)
     );
     // window.addEventListener("m")
+
     window.requestAnimationFrame(this.appLoop);
   }
 
@@ -106,6 +125,39 @@ class Edytor {
   appUpdate(dt) {
     const mouse = this.input.mouse;
     const keys = this.input.keys;
+    const cam = this.camera;
+
+    // 🔹 PAN — przesuwanie kamerą przy wciśniętym środkowym przycisku
+    if (mouse.middle) {
+      // przesuwaj proporcjonalnie do skali
+      cam.panBy(-mouse.deltaX / cam.scale, -mouse.deltaY / cam.scale);
+      cam.clamp();
+    }
+    // 🔹 Zoom skokowy: 0.5 → 1 → 1.5 → 2 → 2.5 → 3
+    if (mouse.wheelDelta) {
+      const zoomLevels = [0.5, 1, 1.5, 2, 2.5, 3];
+      // aktualny najbliższy poziom
+      let currentIndex = zoomLevels.reduce(
+        (best, z, i) =>
+          Math.abs(z - this.camera.scale) <
+          Math.abs(zoomLevels[best] - this.camera.scale)
+            ? i
+            : best,
+        0
+      );
+      // 🔸 reaguj tylko na kierunek (nie na wartość)
+      if (mouse.wheelDelta < 0 && currentIndex < zoomLevels.length - 1) {
+        currentIndex += 1;
+      } else if (mouse.wheelDelta > 0 && currentIndex > 0) {
+        currentIndex -= 1;
+      }
+      const newScale = zoomLevels[currentIndex];
+      // Zoom do kursora
+      this.camera.zoomAt(mouse.x, mouse.y, newScale);
+      // 🔸 wyzeruj po użyciu, żeby nie powtarzało
+      mouse.wheelDelta = 0;
+    }
+
     //Utils.cl(keys);
     if (keys["Escape"] && this.selectPurpose === "select") {
       this.objBuffer = Array.from({ length: this.height }, () =>
@@ -170,6 +222,7 @@ class Edytor {
     }
 
     this.tileObject.update(dt, this.context);
+    Utils.cl(this.camera, true);
   }
 
   rollbackTiles() {
@@ -190,6 +243,8 @@ class Edytor {
     const mouse = this.input.mouse;
     const keys = this.input.keys;
     this.clear(ctx);
+    ctx.save();
+    this.camera.apply(ctx);
     this.grid.draw(this.context);
     this.drawTitleGrid();
     this.drawBuffer();
@@ -203,6 +258,7 @@ class Edytor {
     }
     this.strokeSelectTitel(mouse, ctx);
     this.tileObject.draw(dt, this.context);
+    ctx.restore();
   }
 
   calibrateBuffer(mouseX, mouseY, tSize) {
@@ -216,7 +272,8 @@ class Edytor {
     let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(
       mouseX,
       mouseY,
-      tSize
+      tSize,
+      this.camera
     );
     for (let ty = 0; ty < this.width; ty++) {
       for (let tx = 0; tx < this.height; tx++) {
@@ -314,7 +371,8 @@ class Edytor {
     const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(
       mouseX,
       mouseY,
-      tSize
+      tSize,
+      this.camera
     );
     this.selectedPos[0] === null
       ? (this.selectedPos[0] = [titleX, titleY])
@@ -366,7 +424,8 @@ class Edytor {
     const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(
       mouse.x,
       mouse.y,
-      this.tittleSize
+      this.tittleSize,
+      this.camera
     );
     ctx.strokeRect(x, y, this.tittleSize, this.tittleSize);
     if (this.objBuffer && this.selectPurpose == "select") {
@@ -400,7 +459,8 @@ class Edytor {
     let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(
       mouseX,
       mouseY,
-      tSize
+      tSize,
+      this.camera
     );
     if (!this.lockedTileX && this.drawOnAxle === "y") {
       this.lockedTileX = titleX;
@@ -429,7 +489,8 @@ class Edytor {
     const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(
       mouseX,
       mouseY,
-      tSize
+      tSize,
+      this.camera
     );
     if (this.objGrid[titleY][titleX] > -1) this.objGrid[titleY][titleX] = null;
   }
@@ -445,19 +506,15 @@ class Edytor {
   //   }
   // }
 
-  appLoop(timestamp) {
-    if (!this.lastTime) this.lastTime = timestamp;
-    const delta = timestamp - this.lastTime;
-    this.lastTime = timestamp;
-    this.accumulator += delta;
-    if (this.accumulator >= 16) {
-      this.appUpdate(delta);
-      // if (this.needsRedraw) {
-      this.appDraw(delta);
-      //this.needsRedraw = false;
-      //}
-      this.accumulator = 0;
-    }
+  appLoop(timeStamp) {
+    if (!this.lastTime) this.lastTime = timeStamp;
+    const deltaTime = timeStamp - this.lastTime;
+    this.lastTime = timeStamp;
+
+    const dt = Math.min(deltaTime, 50) / 1000;
+
+    this.appUpdate(dt);
+    this.appDraw(dt);
     window.requestAnimationFrame(this.appLoop);
   }
 }
