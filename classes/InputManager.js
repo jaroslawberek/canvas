@@ -12,6 +12,7 @@ export class InputManager {
             middle: false,
             wheelDelta: 0,
             historyLength: 2,
+            canvasActive: false,
         };
         this.lastMove = performance.now();
         // canvas potrzebny do przeliczenia pozycji myszy na współrzędne gry
@@ -38,6 +39,7 @@ export class InputManager {
         this.mouse.click = { x: null, y: null };
         this.mouse.clickHistory = [];
         this.canvas.addEventListener("mousemove", e => {
+            this.mouse.canvasActive = true;
             const rect = this.canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -52,6 +54,9 @@ export class InputManager {
             //Utils.cl(this.mouse.x + " " + this.mouse.y, true)
             // this.c.needsRedraw = true;
         });
+        this.canvas.addEventListener("mouseleave", e => {
+            this.mouse.canvasActive = false;
+        })
 
         this.canvas.addEventListener("mousedown", e => {
             if (e.button === 0) {

@@ -1,6 +1,7 @@
 import { Utils } from "./classes/utils.js";
 import { Grid } from "./grid.js";
 import { InputManager } from "./classes/InputManager.js";
+import { eventBus } from "./classes/EventBus.js";
 export class TileObject {
     constructor(tileSize, width, height) {
 
@@ -18,8 +19,11 @@ export class TileObject {
         this.image = null;
         this.grid = null;
         this.table = [];
+        this.selectedGrid = null;
+        this.objBuffer = null;
         this.selectedTile = { tableindex: 0 };
         this.input = new InputManager(this.canvas, this);
+        this.selectedPos = [null, null];
         this.context = {
             canvas: this.canvas,
             ctx: this.context2d,
@@ -36,8 +40,15 @@ export class TileObject {
     init() {
         //this.image = await this.loadImage("kafelkiNowe.png"); // <- podmień na własny plik
         this.grid = new Grid(this.tileSize, this.width, this.height);
+        this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+        this.objBuffer = Array.from({ length: this.height }, () => Array(this.width).fill(null));
         this.selectedTile.tableindex = -1;
         this.indexTileset(this.image);
+    }
+    onEditorCanvasActive() {
+        //Utils.cl("EditorCanvasActive..");
+        this.canvasActive = false;
+
     }
     loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -54,8 +65,20 @@ export class TileObject {
     update(dt, appContext) {
         const mouse = this.input.mouse;
         const keys = this.input.keys;
+        if (mouse.canvasActive) {
+            this.canvasActive === true ? "" : eventBus.emit("tileObject:canvasActive", {}), this.canvasActive = true;
+        } else {
+            this.canvasActive === true ? this.canvasActive = false : "";
+        }
         if (mouse.left) {
             this.selectTile(mouse);
+        } else if (mouse.right && keys["Control"]) {
+            this.setSelectionRange(mouse.x, mouse.y, this.tileSize)
+        }
+        if (mouse.right === false && this.selectedPos[1] !== null) {
+            this.resolveSeletedArea();
+            this.selectedPos = [null, null];
+            this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
         }
     }
     draw(dt, appContext) {
@@ -63,6 +86,10 @@ export class TileObject {
         this.clear(this.context2d);
         this.grid.draw(this.context);
         this.context2d.drawImage(this.image, 0, 0);
+        if (this.selectedPos[1] !== null) {
+            this.selctTitlesRange(this.width, this.height, this.tileSize);
+            //this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+        }
         this.strokeSelectTitel(mouse, this.context2d);
 
     }
@@ -83,15 +110,48 @@ export class TileObject {
 
 
     }
+    resolveSeletedArea() {
+        for (let tx = 0; tx < this.width; tx++) {
+            for (let ty = 0; ty < this.height; ty++) {
+                if (!this.selectedGrid[tx][ty])
+                    continue;
+                this.objBuffer[tx][ty] = this.table[tx][ty];
+            }
+        }
+        eventBus.emit("tileObject:tilesSelected", { buffer: this.objBuffer });
+        this.objBuffer = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    }
+
+    selctTitlesRange(width, height, tSize) {
+        const ctx = this.context2d;
+        //tzaznaczenie moglo zaczac sie od prawej do lewej lub od lewej do prawej 
+        //i to samo gora doł
+        let y1 = Math.min(this.selectedPos[0][1], this.selectedPos[1][1]);
+        let y2 = Math.max(this.selectedPos[0][1], this.selectedPos[1][1]);
+        let x1 = Math.min(this.selectedPos[0][0], this.selectedPos[1][0]);
+        let x2 = Math.max(this.selectedPos[0][0], this.selectedPos[1][0]);
+        //czyszcze bufor zaznaczenia zanim znowu wylicze zakres zaznaczenia
+        this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+        for (let ty = y1; ty <= y2; ty++) {
+            for (let tx = x1; tx <= x2; tx++) {
+                this.selectedGrid[ty][tx] = 1; //ustawiam w buforze pole...
+                let y = ty === 0 ? 0 : ty * tSize;
+                let x = tx === 0 ? 0 : tx * tSize;
+                TileObject.drawSelectedFill(ctx, x, y, tSize); // rysuje zaznaczeine
+            }
+        }
+    }
+    setSelectionRange(mouseX, mouseY, tSize) {
+        const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize);
+        (this.selectedPos[0] === null) ? this.selectedPos[0] = [titleX, titleY] : this.selectedPos[1] = [titleX, titleY];
+    }
     selectTile(mouse) {
         const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tileSize);
         this.selectedTile = { x: x, y: y, titleX: titleX, titleY: titleY, tableindex: this.table[titleY][titleX] }
-        //Utils.cl(this.table, true);
-        Utils.cl(this.selectedTile);
-        // this.drawTileByIndex(this.context2d, this.image, this.selectedTile.tableindex, this.tileSize, this.tileSize, 50, 100)
-
+        // Utils.cl(this.selectedTile);
     }
     strokeSelectTitel(mouse, ctx) {
+        if (this.canvasActive === false) return;
         ctx.strokeStyle = this.selectTitleColor;
         ctx.lineWidth = this.selectTitleWidth;
         const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tileSize);
