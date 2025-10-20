@@ -68,14 +68,12 @@ class Edytor {
   }
 
   init() {
-    this.cameraTarget = {
+    /* this.cameraTarget = {
       x: 0,
       y: 0,
       width: 10,
       height: 10,
-    };
-    //this.camera.follow(this.cameraTarget);
-    //this.camera.mode = "manual"; // 👈 nowy tryb dla edytora
+    };*/
     this.objGrid = Array.from({ length: this.height }, () =>
       Array(this.width).fill(null)
     );
@@ -127,35 +125,18 @@ class Edytor {
     const keys = this.input.keys;
     const cam = this.camera;
 
+    if (keys["+"] || keys["="]) {
+      this.camera.zoomAt(mouse.x, mouse.y, this.camera.scale + 0.1);
+    }
+    if (keys["-"] || keys["_"]) {
+      this.camera.zoomAt(mouse.x, mouse.y, this.camera.scale - 0.1);
+    }
+
     // 🔹 PAN — przesuwanie kamerą przy wciśniętym środkowym przycisku
     if (mouse.middle) {
       // przesuwaj proporcjonalnie do skali
       cam.panBy(-mouse.deltaX / cam.scale, -mouse.deltaY / cam.scale);
       cam.clamp();
-    }
-    // 🔹 Zoom skokowy: 0.5 → 1 → 1.5 → 2 → 2.5 → 3
-    if (mouse.wheelDelta) {
-      const zoomLevels = [0.5, 1, 1.5, 2, 2.5, 3];
-      // aktualny najbliższy poziom
-      let currentIndex = zoomLevels.reduce(
-        (best, z, i) =>
-          Math.abs(z - this.camera.scale) <
-          Math.abs(zoomLevels[best] - this.camera.scale)
-            ? i
-            : best,
-        0
-      );
-      // 🔸 reaguj tylko na kierunek (nie na wartość)
-      if (mouse.wheelDelta < 0 && currentIndex < zoomLevels.length - 1) {
-        currentIndex += 1;
-      } else if (mouse.wheelDelta > 0 && currentIndex > 0) {
-        currentIndex -= 1;
-      }
-      const newScale = zoomLevels[currentIndex];
-      // Zoom do kursora
-      this.camera.zoomAt(mouse.x, mouse.y, newScale);
-      // 🔸 wyzeruj po użyciu, żeby nie powtarzało
-      mouse.wheelDelta = 0;
     }
 
     //Utils.cl(keys);
@@ -447,7 +428,8 @@ class Edytor {
         this.width,
         this.height,
         this.tittleSize,
-        this.tittleSize
+        this.tittleSize,
+        this.camera
       );
     } else if (this.tileObject.selectedTile.tableindex > -1) {
       this.tileObject.drawTileByIndex(
@@ -839,3 +821,28 @@ const e = new Edytor();
 // })
 
 // if (mouse.right === false && this.selectedGrid.some(row => row.some(cell => cell === "1")))
+
+// 🔹 Zoom skokowy: 0.5 → 1 → 1.5 → 2 → 2.5 → 3
+/*if (mouse.wheelDelta) {
+      const zoomLevels = [0.5, 1, 1.5, 2, 2.5, 3];
+      // aktualny najbliższy poziom
+      let currentIndex = zoomLevels.reduce(
+        (best, z, i) =>
+          Math.abs(z - this.camera.scale) <
+          Math.abs(zoomLevels[best]  - this.camera.scale)
+            ? i
+            : best,
+        0
+      );
+      // 🔸 reaguj tylko na kierunek (nie na wartość)
+      if (mouse.wheelDelta < 0 && currentIndex < zoomLevels.length - 1) {
+        currentIndex += 1;
+      } else if (mouse.wheelDelta > 0 && currentIndex > 0) {
+        currentIndex -= 1;
+      }
+      const newScale = zoomLevels[currentIndex];
+      // Zoom do kursora
+      this.camera.zoomAt(mouse.x, mouse.y, newScale);
+      // 🔸 wyzeruj po użyciu, żeby nie powtarzało
+      mouse.wheelDelta = 0;
+    }*/

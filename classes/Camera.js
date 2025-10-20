@@ -16,7 +16,7 @@ export class Camera {
 
     // Zoom
     this.scale = 1;
-    this.minScale = 1;
+    this.minScale = 0.3;
     this.maxScale = 4;
 
     // Rozmiar viewportu (w pikselach ekranu/canvasu)
@@ -30,7 +30,7 @@ export class Camera {
 
   /** Ustaw zoom w bezpiecznym zakresie */
   setScale(next) {
-    this.scale = Math.min(this.maxScale, Math.max(this.minScale, next));
+    this.scale = Math.min(this.maxScale, Math.max(this.minScale, next)); //np. min(4,max(1,next=5))-->min(4,5) wiec 4 dopuszczalne;
   }
   s;
 
@@ -58,7 +58,9 @@ export class Camera {
     this.clamp();
   }
 
-  /** Przesuń kamerę o wektor (dx, dy) w współrzędnych świata */
+  /** Przesuń kamerę o wektor (dx, dy) w współrzędnych świata
+   * this.clamp() - pilnuje by kamera w pozycjach x i y nie wyszla poza swiat
+   */
   panBy(dx, dy) {
     this.x += dx;
     this.y += dy;

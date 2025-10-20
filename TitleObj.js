@@ -203,8 +203,64 @@ export class TileObject {
     );
   }
 
-  drawWithBuffer(ctx, mouseX, mouseY, buffer, width, height, tileW, tileH) {
+  drawWithBuffer(
+    ctx,
+    mouseX,
+    mouseY,
+    buffer,
+    width,
+    height,
+    tileW,
+    tileH,
+    camera = null
+  ) {
     let first = null;
+
+    // 🟢 Przelicz współrzędne ekranu na współrzędne świata
+    const worldMouseX = camera ? mouseX / camera.scale + camera.x : mouseY;
+    const worldMouseY = camera ? mouseY / camera.scale + camera.y : mouseX;
+    //Utils.cl(buffer);
+
+    for (let tx = 0; tx < width; tx++) {
+      for (let ty = 0; ty < height; ty++) {
+        if (buffer[tx][ty] === null) continue;
+
+        const y = ty * tileH;
+        const x = tx * tileW;
+
+        if (!first) first = { x: y, y: x };
+
+        // 🟢 uwzględnij pozycję w świecie
+        this.drawTileByIndex(
+          ctx,
+          this.image,
+          buffer[tx][ty],
+          tileW,
+          tileH,
+          y + worldMouseX - first.x,
+          x + worldMouseY - first.y
+        );
+      }
+    }
+  }
+
+  /*drawWithBuffer(
+    ctx,
+    mouseX,
+    mouseY,
+    buffer,
+    width,
+    height,
+    tileW,
+    tileH,
+    camera = null
+  ) {
+    let first = null;
+    // 🟢 Przelicz współrzędne ekranu na współrzędne świata
+    const worldMouseX = camera ? mouseX / camera.scale + camera.x : mouseX;
+    const worldMouseY = camera ? mouseY / camera.scale + camera.y : mouseY;
+    // mouseX = mouseX / camera.scale + camera.y;
+    // mouseX = mouseY / camera.scale + camera.x;
     for (let tx = 0; tx < width; tx++) {
       for (let ty = 0; ty < height; ty++) {
         if (buffer[tx][ty] === null) continue;
@@ -219,13 +275,13 @@ export class TileObject {
           buffer[tx][ty],
           tileW,
           tileH,
-          y + (mouseX - first.x),
-          x + (mouseY - first.y)
+          y + mouseX - first.x,
+          x + mouseY - first.y
         );
       }
     }
   }
-
+*/
   static strokeTitlePosition(ctx, status, titleCoordinate, titleSize) {
     if (status === "deleteTitle") ctx.strokeStyle = "red";
     else if (status === "selectTitles") ctx.strokeStyle = "yellow";
