@@ -6,6 +6,7 @@ import { Utils } from "./classes/utils.js";
 import { TileObject } from "./TitleObj.js";
 import { eventBus } from "./classes/EventBus.js";
 import { Queue } from "./classes/queue.js";
+import { ShortcutManager } from "./classes/ShortcutManager.js";
 
 class Edytor {
   constructor(tittleSize = 16, width = 1550, height = 1550) {
@@ -41,6 +42,7 @@ class Edytor {
     this.lockedTileX = null;
     this.canvasActive === false;
     this.input = new InputManager(this.canvas, this);
+    this.shortcuts = new ShortcutManager(this.input);
     // 👇 ważne — związanie kontekstu
     this.appLoop = this.appLoop.bind(this);
     this.camera = new Camera(
@@ -85,6 +87,8 @@ class Edytor {
     );
     this.grid = new Grid(this.tittleSize, this.width, this.height);
     this.tileObject = new TileObject(this.tittleSize, this.height, this.width);
+    this.registerShortcuts();
+
     // Evet init
     eventBus.on(
       "editor:canvasActive",
@@ -106,6 +110,45 @@ class Edytor {
   clear(ctx) {
     ctx.fillStyle = this.bgColor;
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+  registerShortcuts() {
+    this.shortcuts.register(
+      "Control+z",
+      () => this.rollbackTiles(),
+      300,
+      "Undo (Cofnij)"
+    );
+
+    this.shortcuts.register(
+      "Escape",
+      () => this.cancelSelection(),
+      100,
+      "Cancel selection (Anuluj zaznaczenie)"
+    );
+
+    this.shortcuts.register(
+      "+",
+      () =>
+        this.camera.zoomAt(
+          this.input.mouse.x,
+          this.input.mouse.y,
+          this.camera.scale + 0.1
+        ),
+      150,
+      "Zoom in (Powiększ)"
+    );
+
+    this.shortcuts.register(
+      "-",
+      () =>
+        this.camera.zoomAt(
+          this.input.mouse.x,
+          this.input.mouse.y,
+          this.camera.scale - 0.1
+        ),
+      150,
+      "Zoom out (Pomniejsz)"
+    );
   }
 
   onTileObjectCanvasActive() {
