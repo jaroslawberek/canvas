@@ -1,12 +1,12 @@
-import { Grid } from "./grid.js";
-import { Camera } from "./classes/Camera.js";
-import { InputManager } from "./classes/InputManager.js";
-import { Physics } from "./classes/Physics.js";
-import { Utils } from "./classes/utils.js";
-import { TileObject } from "./TitleObj.js";
-import { eventBus } from "./classes/EventBus.js";
-import { Queue } from "./classes/queue.js";
-import { ShortcutManager } from "./classes/ShortcutManager.js";
+import { Grid } from './grid.js';
+import { Camera } from './classes/Camera.js';
+import { InputManager } from './classes/InputManager.js';
+import { Physics } from './classes/Physics.js';
+import { Utils } from './classes/utils.js';
+import { TileObject } from './TitleObj.js';
+import { eventBus } from './classes/EventBus.js';
+import { Queue } from './classes/queue.js';
+import { ShortcutManager } from './classes/ShortcutManager.js';
 
 class Edytor {
   constructor(tittleSize = 16, width = 1550, height = 1550) {
@@ -14,12 +14,12 @@ class Edytor {
     this.wordHeight = 2000;
     this.width = width;
     this.height = height;
-    this.canvas = document.querySelector("#canvas");
+    this.canvas = document.querySelector('#canvas');
 
     this.canvas.width = window.innerWidth * 0.73;
     this.canvas.height = window.innerHeight;
-    this.context2d = this.canvas.getContext("2d");
-    this.bgColor = "#e7e5e5ff"; // domyślny kolor tła
+    this.context2d = this.canvas.getContext('2d');
+    this.bgColor = '#e7e5e5ff'; // domyślny kolor tła
     this.tittleSize = tittleSize;
     this.needsRedraw = true;
     this.tileObject = null;
@@ -33,11 +33,11 @@ class Edytor {
     this.angle = 0;
     this.accumulator = 0;
     this.lastTime = 0;
-    this.selectTitleColor = "blue";
+    this.selectTitleColor = 'blue';
     this.selectTitleWidth = 1;
     this.selectedPos = [null, null];
-    this.selectPurpose = "none";
-    this.lockedAxle = "none";
+    this.selectPurpose = 'none';
+    this.lockedAxle = 'none';
     this.lockedTileY = null;
     this.lockedTileX = null;
     this.canvasActive === false;
@@ -45,12 +45,7 @@ class Edytor {
     this.shortcuts = new ShortcutManager(this.input);
     // 👇 ważne — związanie kontekstu
     this.appLoop = this.appLoop.bind(this);
-    this.camera = new Camera(
-      this.width,
-      this.height,
-      this.wordWidth,
-      this.wordHeight
-    );
+    this.camera = new Camera(this.width, this.height, this.wordWidth, this.wordHeight);
     this.context = {
       canvas: this.canvas,
       ctx: this.context2d,
@@ -76,32 +71,17 @@ class Edytor {
       width: 10,
       height: 10,
     };*/
-    this.objGrid = Array.from({ length: this.height }, () =>
-      Array(this.width).fill(null)
-    );
-    this.selectedGrid = Array.from({ length: this.height }, () =>
-      Array(this.width).fill(null)
-    );
-    this.objBuffer = Array.from({ length: this.height }, () =>
-      Array(this.width).fill(null)
-    );
+    this.objGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    this.objBuffer = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     this.grid = new Grid(this.tittleSize, this.width, this.height);
     this.tileObject = new TileObject(this.tittleSize, this.height, this.width);
     this.registerShortcuts();
 
     // Evet init
-    eventBus.on(
-      "editor:canvasActive",
-      this.tileObject.onEditorCanvasActive.bind(this.tileObject)
-    );
-    eventBus.on(
-      "tileObject:canvasActive",
-      this.onTileObjectCanvasActive.bind(this)
-    );
-    eventBus.on(
-      "tileObject:tilesSelected",
-      this.onTileObjectSelectedTiles.bind(this)
-    );
+    eventBus.on('editor:canvasActive', this.tileObject.onEditorCanvasActive.bind(this.tileObject));
+    eventBus.on('tileObject:canvasActive', this.onTileObjectCanvasActive.bind(this));
+    eventBus.on('tileObject:tilesSelected', this.onTileObjectSelectedTiles.bind(this));
     // window.addEventListener("m")
 
     window.requestAnimationFrame(this.appLoop);
@@ -112,42 +92,75 @@ class Edytor {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
   registerShortcuts() {
+    const mouse = this.input.mouse;
+    const keys = this.input.keys;
+    const cam = this.camera;
+    this.shortcuts.register('Control+z', () => this.rollbackTiles(), 200, 'Undo (Cofnij)');
+    this.shortcuts.register('Escape', () => this.cancelSelection(), 100, 'Cancel selection (Anuluj zaznaczenie)');
+    // Zoom in
     this.shortcuts.register(
-      "Control+z",
-      () => this.rollbackTiles(),
-      300,
-      "Undo (Cofnij)"
-    );
-
-    this.shortcuts.register(
-      "Escape",
-      () => this.cancelSelection(),
-      100,
-      "Cancel selection (Anuluj zaznaczenie)"
-    );
-
-    this.shortcuts.register(
-      "+",
-      () =>
-        this.camera.zoomAt(
-          this.input.mouse.x,
-          this.input.mouse.y,
-          this.camera.scale + 0.1
-        ),
+      '=',
+      () => this.camera.zoomAt(this.input.mouse.x, this.input.mouse.y, this.camera.scale + 0.1),
       150,
-      "Zoom in (Powiększ)"
+      'Zoom in (=)'
+    );
+    this.shortcuts.register(
+      'shift+=',
+      () => this.camera.zoomAt(this.input.mouse.x, this.input.mouse.y, this.camera.scale + 0.1),
+      150,
+      'Zoom in (+)'
+    );
+    // (opcjonalnie) bezpośrednio „+” – teraz już zadziała dzięki parserowi:
+    this.shortcuts.register(
+      '+',
+      () => this.camera.zoomAt(this.input.mouse.x, this.input.mouse.y, this.camera.scale + 0.1),
+      150,
+      'Zoom in (+)'
+    );
+
+    // Zoom out
+    this.shortcuts.register(
+      '-',
+      () => this.camera.zoomAt(this.input.mouse.x, this.input.mouse.y, this.camera.scale - 0.1),
+      150,
+      'Zoom out (-)'
+    );
+    this.shortcuts.register(
+      'shift+-',
+      () => this.camera.zoomAt(this.input.mouse.x, this.input.mouse.y, this.camera.scale - 0.1),
+      150,
+      'Zoom out (_)'
     );
 
     this.shortcuts.register(
-      "-",
-      () =>
-        this.camera.zoomAt(
-          this.input.mouse.x,
-          this.input.mouse.y,
-          this.camera.scale - 0.1
-        ),
+      '=',
+      () => this.camera.zoomAt(this.input.mouse.x, this.input.mouse.y, this.camera.scale - 0.1),
       150,
-      "Zoom out (Pomniejsz)"
+      'Zoom out (Pomniejsz)'
+    );
+
+    //mysz
+
+    this.shortcuts.register(
+      'leftclick',
+      () => {
+        this.addBlock(mouse);
+      },
+      0,
+      'Add Tile or block'
+    );
+    this.shortcuts.register('left', () => this.addTitle(mouse), 0, 'Add Tile or block');
+    this.shortcuts.register('shift+left', () => this.deleteTile(mouse.x, mouse.y, this.tittleSize), 0, 'Delete Tile');
+    this.shortcuts.register(
+      'right',
+      () => {
+        if (keys['Shift']) this.selectPurpose = 'clear';
+        else if (keys['Control']) this.selectPurpose = 'select';
+        else this.selectPurpose = 'insert';
+        this.setSelectionRange(mouse.x, mouse.y, this.tittleSize);
+      },
+      0,
+      'Add Tile or block'
     );
   }
 
@@ -160,114 +173,84 @@ class Edytor {
     // Utils.cl("Bufor w editor z tileObject..")
     // Utils.cl(obj.buffer);
     this.objBuffer = [...obj.buffer];
-    this.selectPurpose = "select";
+    this.selectPurpose = 'select';
+  }
+  cancelSelection() {
+    if (this.selectPurpose === 'select') {
+      this.objBuffer = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+      this.selectPurpose = 'none';
+    }
   }
 
   appUpdate(dt) {
     const mouse = this.input.mouse;
     const keys = this.input.keys;
     const cam = this.camera;
+    this.shortcuts.update();
+    this.input.update();
 
-    if (keys["+"] || keys["="]) {
-      this.camera.zoomAt(mouse.x, mouse.y, this.camera.scale + 0.1);
-    }
-    if (keys["-"] || keys["_"]) {
-      this.camera.zoomAt(mouse.x, mouse.y, this.camera.scale - 0.1);
-    }
-
-    // 🔹 PAN — przesuwanie kamerą przy wciśniętym środkowym przycisku
     if (mouse.middle) {
       // przesuwaj proporcjonalnie do skali
       cam.panBy(-mouse.deltaX / cam.scale, -mouse.deltaY / cam.scale);
       cam.clamp();
     }
 
-    //Utils.cl(keys);
-    if (keys["Escape"] && this.selectPurpose === "select") {
-      this.objBuffer = Array.from({ length: this.height }, () =>
-        Array(this.width).fill(null)
-      );
-      this.selectPurpose = "none";
-    }
-
-    if (keys["Control"] && keys["z"]) {
-      this.ctrlZPressed ? "" : this.rollbackTiles(), (this.ctrlZPressed = true);
-    } else {
-      this.ctrlZPressed = false; // 👈 odblokuj po puszczeniu
-    }
     if (mouse.canvasActive) {
-      this.canvasActive === true
-        ? ""
-        : eventBus.emit("editor:canvasActive", {}),
-        (this.canvasActive = true);
+      this.canvasActive === true ? '' : eventBus.emit('editor:canvasActive', {}), (this.canvasActive = true);
     } else {
       //this.canvasActive===true ?  this.canvasActive=false : "";
     }
 
-    if (mouse.left && keys["Shift"]) {
-      this.deleteTile(mouse.x, mouse.y, this.tittleSize);
-    } else if (mouse.left) {
-      if (this.selectPurpose === "select") {
-        if (!this.leftClick) {
-          this.calibrateBuffer(mouse.x, mouse.y, this.tittleSize);
-          this.insertBuffer();
-          this.leftClick = true;
-        }
-      } else {
-        this.addTile(mouse.x, mouse.y, this.tittleSize);
-      }
-    } else if (mouse.left === false) {
-      this.leftClick = false; // 👈 odblokuj po puszczeniu
-    }
-    if (mouse.right) {
-      if (keys["Shift"]) this.selectPurpose = "clear";
-      else if (keys["Control"]) this.selectPurpose = "select";
-      else this.selectPurpose = "insert";
-      this.setSelectionRange(mouse.x, mouse.y, this.tittleSize);
-    }
-    if (mouse.left && keys["x"]) {
-      this.drawOnAxle = "x";
-    } else if (mouse.left && keys["y"]) {
-      this.drawOnAxle = "y";
+    if (mouse.left && keys['x']) {
+      this.drawOnAxle = 'x';
+    } else if (mouse.left && keys['y']) {
+      this.drawOnAxle = 'y';
     } else {
-      this.drawOnAxle = "all";
+      this.drawOnAxle = 'all';
     }
 
-    if (
-      mouse.right === false &&
-      this.selectedPos[1] !== null &&
-      this.drawOnAxle === "all"
-    ) {
+    if (mouse.right === false && this.selectedPos[1] !== null && this.drawOnAxle === 'all') {
       this.resolveSeletedArea();
       this.selectedPos = [null, null];
-      this.selectedGrid = Array.from({ length: this.height }, () =>
-        Array(this.width).fill(null)
-      );
+      this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     }
 
     this.tileObject.update(dt, this.context);
-    //Utils.cl(this.camera, true);
+
     if (!this._camDebugTimer || performance.now() - this._camDebugTimer > 250) {
       console.log(
-        `%c📷 Camera → x:${cam.x.toFixed(1)} y:${cam.y.toFixed(
-          1
-        )} scale:${cam.scale.toFixed(2)}`,
-        "color: cyan; font-weight: bold;"
+        `%c📷 Camera → x:${cam.x.toFixed(1)} y:${cam.y.toFixed(1)} scale:${cam.scale.toFixed(2)}`,
+        'color: cyan; font-weight: bold;'
       );
       this._camDebugTimer = performance.now();
     }
   }
 
+  addTitle(mouse) {
+    this.addTile(mouse.x, mouse.y, this.tittleSize);
+  }
+  addBlock(mouse) {
+    if (this.selectPurpose === 'select') {
+      // 👇 jeśli już obsłużono klik – pomiń
+      // if (this.blockClickHandled) return;
+
+      // ✅ ustaw blokadę
+      // this.blockClickHandled = true;
+      this.calibrateBuffer(mouse.x, mouse.y, this.tittleSize);
+      this.insertBuffer();
+      // setTimeout(() => (this.blockClickHandled = false), 100);
+    }
+  }
   rollbackTiles() {
     const history = this.historyObjects.pop();
     if (!history) return;
-    Utils.cl("ile w historii: " + history, true);
-    Utils.cl("ile do usuniecia: " + history.oldTile.length);
+    Utils.cl('ile w historii: ' + history, true);
+    Utils.cl('ile do usuniecia: ' + history.oldTile.length);
 
     for (const oldTile of history.oldTile) {
       this.objGrid[oldTile.ty][oldTile.tx] = oldTile.tileObj;
     }
-    Utils.cl("Po usunieciu:");
+    Utils.cl('Po usunieciu:');
     Utils.cl(history);
   }
 
@@ -286,7 +269,7 @@ class Edytor {
       //this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     }
 
-    if (this.drawOnAxle != "all") {
+    if (this.drawOnAxle != 'all') {
       //xxxthis.selectTileAxle(this.lockedTileX||this.lockedTileY);ss
     }
     this.strokeSelectTitel(mouse, ctx);
@@ -299,15 +282,8 @@ class Edytor {
     let newY = -1;
     let absX = -1;
     let absY = -1;
-    let temp = Array.from({ length: this.height }, () =>
-      Array(this.width).fill(null)
-    );
-    let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(
-      mouseX,
-      mouseY,
-      tSize,
-      this.camera
-    );
+    let temp = Array.from({ length: this.height }, () => Array(this.width).fill(null));
+    let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize, this.camera);
     for (let ty = 0; ty < this.width; ty++) {
       for (let tx = 0; tx < this.height; tx++) {
         if (!this.objBuffer[ty][tx]) continue;
@@ -337,8 +313,7 @@ class Edytor {
         //   Utils.cl( this.objGrid[tx][ty])
       }
     }
-    if (oldTile.length > 0)
-      this.historyObjects.push({ type: "insertblockbuffer", oldTile: oldTile });
+    if (oldTile.length > 0) this.historyObjects.push({ type: 'insertblockbuffer', oldTile: oldTile });
     Utils.cl(this.historyObjects, true);
 
     //this.objBuffer =  Array.from({ length: this.height }, () => Array(this.width).fill(null));
@@ -348,18 +323,17 @@ class Edytor {
     for (let tx = 0; tx < this.width; tx++) {
       for (let ty = 0; ty < this.height; ty++) {
         if (!this.selectedGrid[tx][ty]) continue;
-        if (this.selectPurpose === "clear") this.objGrid[tx][ty] = null;
-        else if (this.selectPurpose === "insert") {
+        if (this.selectPurpose === 'clear') this.objGrid[tx][ty] = null;
+        else if (this.selectPurpose === 'insert') {
           oldTile.push({ ty: tx, tx: ty, tileObj: this.objGrid[ty][tx] });
           this.objGrid[tx][ty] = this.tileObject.selectedTile.tableindex;
-        } else if ((this.selectPurpose = "select")) {
+        } else if ((this.selectPurpose = 'select')) {
           this.objBuffer[tx][ty] = this.objGrid[tx][ty];
         }
       }
     }
     Utils.cl(oldTile.length);
-    if (oldTile.length > 0)
-      this.historyObjects.push({ type: "insertblock", oldTile: oldTile });
+    if (oldTile.length > 0) this.historyObjects.push({ type: 'insertblock', oldTile: oldTile });
     Utils.cl(this.historyObjects, true);
   }
 
@@ -389,27 +363,14 @@ class Edytor {
         if (this.objBuffer[tx][ty] === null) continue;
         let y = ty === 0 ? 0 : ty * this.tittleSize;
         let x = tx === 0 ? 0 : tx * this.tittleSize;
-        TileObject.drawSelectedFill(
-          ctx,
-          y,
-          x,
-          this.tittleSize,
-          "rgba(209, 50, 50, 0.3"
-        );
+        TileObject.drawSelectedFill(ctx, y, x, this.tittleSize, 'rgba(209, 50, 50, 0.3');
         //this.tileObject.drawTileByIndex(this.context2d, this.tileObject.image, this.objGrid[tx][ty], this.tittleSize, this.tittleSize, y,x);
       }
     }
   }
   setSelectionRange(mouseX, mouseY, tSize) {
-    const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(
-      mouseX,
-      mouseY,
-      tSize,
-      this.camera
-    );
-    this.selectedPos[0] === null
-      ? (this.selectedPos[0] = [titleX, titleY])
-      : (this.selectedPos[1] = [titleX, titleY]);
+    const { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize, this.camera);
+    this.selectedPos[0] === null ? (this.selectedPos[0] = [titleX, titleY]) : (this.selectedPos[1] = [titleX, titleY]);
   }
 
   selctTitlesRange(width, height, tSize) {
@@ -421,9 +382,7 @@ class Edytor {
     let x1 = Math.min(this.selectedPos[0][0], this.selectedPos[1][0]);
     let x2 = Math.max(this.selectedPos[0][0], this.selectedPos[1][0]);
     //czyszcze bufor zaznaczenia zanim znowu wylicze zakres zaznaczenia
-    this.selectedGrid = Array.from({ length: this.height }, () =>
-      Array(this.width).fill(null)
-    );
+    this.selectedGrid = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     for (let ty = y1; ty <= y2; ty++) {
       for (let tx = x1; tx <= x2; tx++) {
         this.selectedGrid[ty][tx] = 1; //ustawiam w buforze pole...
@@ -450,18 +409,13 @@ class Edytor {
   strokeSelectTitel(mouse, ctx) {
     const keys = this.input.keys;
     if (this.canvasActive === false) return;
-    if (keys["Shift"] === true) ctx.strokeStyle = "red";
-    else if (mouse.right === true) ctx.strokeStyle = "yellow";
+    if (keys['Shift'] === true) ctx.strokeStyle = 'red';
+    else if (mouse.right === true) ctx.strokeStyle = 'yellow';
     else ctx.strokeStyle = this.selectTitleColor;
     ctx.lineWidth = this.selectTitleWidth;
-    const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(
-      mouse.x,
-      mouse.y,
-      this.tittleSize,
-      this.camera
-    );
+    const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouse.x, mouse.y, this.tittleSize, this.camera);
     ctx.strokeRect(x, y, this.tittleSize, this.tittleSize);
-    if (this.objBuffer && this.selectPurpose == "select") {
+    if (this.objBuffer && this.selectPurpose == 'select') {
       //  Utils.cl("d")
       this.tileObject.drawWithBuffer(
         ctx,
@@ -490,20 +444,14 @@ class Edytor {
   addTile(mouseX, mouseY, tSize) {
     const ctx = this.context2d;
     const oldTile = [];
-    let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(
-      mouseX,
-      mouseY,
-      tSize,
-      this.camera
-    );
-    if (!this.lockedTileX && this.drawOnAxle === "y") {
+    let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize, this.camera);
+    if (!this.lockedTileX && this.drawOnAxle === 'y') {
       this.lockedTileX = titleX;
       //xthis.selectTileAxle(this.lockedTileX, titleY);
-    } else if (!this.lockedTileY && this.drawOnAxle === "x") {
+    } else if (!this.lockedTileY && this.drawOnAxle === 'x') {
       this.lockedTileY = titleY;
       //this.selectTileAxle(this.lockedTileY, titleX);
-    } else if (this.drawOnAxle === "all")
-      this.lockedTileX = this.lockedTileY = null;
+    } else if (this.drawOnAxle === 'all') this.lockedTileX = this.lockedTileY = null;
     titleX = this.lockedTileX ? this.lockedTileX : titleX;
     titleY = this.lockedTileY ? this.lockedTileY : titleY;
     if (!this.objGrid[titleY][titleX]) {
@@ -514,18 +462,13 @@ class Edytor {
           tileObj: this.objGrid[titleY][titleX],
         });
       this.objGrid[titleY][titleX] = this.tileObject.selectedTile.tableindex;
-      this.historyObjects.push({ type: "addtile", oldTile: oldTile });
+      this.historyObjects.push({ type: 'addtile', oldTile: oldTile });
       Utils.cl(this.historyObjects, true);
     }
   }
 
   deleteTile(mouseX, mouseY, tSize) {
-    const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(
-      mouseX,
-      mouseY,
-      tSize,
-      this.camera
-    );
+    const { x, y, titleX, titleY } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize, this.camera);
     if (this.objGrid[titleY][titleX] > -1) this.objGrid[titleY][titleX] = null;
   }
 
