@@ -1,0 +1,75 @@
+@use "../abstracts/variables" as *;
+@use "../abstracts/placeholders";
+@use "../abstracts/mixins";
+@use "sass:color";
+
+/* Boczne menu administracyjne */
+
+.sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: $sidebar-nav-gap;
+    margin: $sidebar-nav-margin;
+    padding: $sidebar-nav-padding;
+    li {
+        position: relative;
+    }
+    &-link {
+        display: flex;
+        align-items: center;
+        justify-content: start;
+        position: relative;
+        // background-color: silver;
+        color: $sidebar-nav-link-color;
+        /*  */
+        &:hover {
+            color: $sidebar-nav-link-hover-color;
+            background-color: color.adjust($sidebar-bg, $lightness: -5%);
+            font-weight: $sidebar-nav-link-hover-weight;
+            transition:
+                color 0.3s ease-in,
+                background-color 0.3s ease-in;
+        }
+        &--submenu {
+            color: $sidebar-nav-link-color;
+            &:after {
+                position: absolute;
+                left: calc(100% - 10px);
+                width: $sidebar-nav-link-submenu-after-width;
+                font-weight: 900;
+                font-family: $sidebar-nav-link-submenu-after-font-family;
+            }
+            &.collapsed::after {
+                content: $sidebar-nav-link-submenu-chevron-down; // fa-chevron-right
+            }
+            &:not(.collapsed)::after {
+                content: $sidebar-nav-link-submenu-chevron-right; // fa-chevron-right
+            }
+        }
+    }
+    &--sub {
+        // podmenu wyskakuje rozwija sie normalnie pod submenu
+        padding: $sidebar-nav-sub-padding;
+        margin: $sidebar-nav-sub-margin;
+        &__icon {
+            margin-right: $sidebar-nav-sub-icon-right;
+        }
+        &__caption {
+            /*  */
+        }
+    }
+    &--sub-right {
+        // podmenu wyskakuje obok pozycji submenu
+        position: absolute;
+        margin: $sidebar-nav-sub-margin;
+        padding: 5px 26px;
+        background-color: $sidebar-bg;
+        left: calc(100% + 5px);
+        top: 1px;
+    }
+    &-icon {
+        margin-right: 5px;
+    }
+    &-caption {
+    }
+}

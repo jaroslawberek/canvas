@@ -1,0 +1,62 @@
+@use "../abstracts/variables" as *;
+@use "../abstracts/placeholders";
+@use "../abstracts/mixins";
+@use "sass:map";
+.navbar-brand img {
+    height: 40px;
+    width: 40px;
+    margin-right: 10px;
+}
+.nav-tabs .nav-link {
+    color: #333;
+}
+.nav-tabs .nav-link.active {
+    display: flex;
+    background-color: #e9ecef;
+    border-color: #dee2e6 #dee2e6 #fff;
+    color: #0d6efd;
+}
+.tab-content {
+    height: 100%;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    padding: 5px 20px;
+    .active {
+        display: flex;
+    }
+}
+.row {
+    height: 100%;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+.col,
+.col-9,
+.col-4,
+.col-3 {
+    height: 100%;
+    padding: 2px 0px;
+    margin: 0px;
+}
+canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    padding: 0;
+    margin: 0;
+}
+#canvas {
+    background-color: silver;
+}
+#canvas2 {
+    background-color: blue;
+}
+.canvas-content {
+    padding: 0;
+    margin: 0px;
+    min-height: calc(100vh - 250px);
+    overflow: hidden; /* 🔹 scrollbar w razie potrzeby */
+    background: white;
+}

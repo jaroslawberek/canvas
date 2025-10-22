@@ -1,0 +1,15 @@
+
+// 🔹 Mixiny
+
+@mixin person-skeleton($direction, $align: center, $radius: 50%, $padding: 0, $width: 2rem, $height: 2rem) {
+  flex-direction: $direction;
+  text-align: $align;
+  height: auto;
+
+  > img {
+    border-radius: $radius;
+    padding: $padding;
+    width: $width;
+    height: $height;
+  }
+}

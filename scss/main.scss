@@ -1,0 +1,43 @@
+// =====================================
+// Main SCSS entry point (7-1 architecture)
+// =====================================
+// -------------------------------------
+// 1. Abstracts (zmienne, funkcje, mixiny, placeholdery)
+// -------------------------------------
+@use "abstracts/variables" as *;
+@use "abstracts/functions"; // jeśli dodasz własne funkcje Sass
+@use "abstracts/mixins";
+@use "abstracts/placeholders";
+// -------------------------------------
+// 2. Base (reset, typografia, globalne style elementów)
+// -------------------------------------
+@use "base/reset";
+@use "base/typography"; // np. nagłówki, paragrafy
+// -------------------------------------
+// 3. Layout (szkielet strony)
+// -------------------------------------
+@use "layout/main";
+@use "layout/header";
+@use "layout/footer";
+@use "layout/sidebar";
+// -------------------------------------
+// 4. Components (mniejsze, wielokrotnego użytku)
+// -------------------------------------
+@use "components/buttons"; // przykład
+@use "components/menubar";
+@use "components/menubar-side";
+@use "components/cards"; // przykład
+// -------------------------------------
+// 5. Pages (style specyficzne dla danej strony)
+// -------------------------------------
+@use "pages/home";
+@use "pages/dashboard";
+// -------------------------------------
+// 6. Themes (różne warianty kolorystyczne / tryby)
+// -------------------------------------
+//@use "themes/dark";
+//@use "themes/light";
+// -------------------------------------
+// 7. Utilities (helper classes, np. .u-hidden)
+// -------------------------------------
+@use "utilities/helpers";

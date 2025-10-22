@@ -1,0 +1,93 @@
+// ===============================
+// 🎨 Kolory globalne
+// ===============================
+$color-bg-body: #f7f7f7;
+$color-text-base: #000;
+$color-text-secondary: #6c757d;
+$color-text-muted: #666;
+$color-text-hover: rgb(30, 30, 240);
+$color-border-divider: #e3e6f0;
+// ===============================
+// 🔹 Typografia
+// ===============================
+$font-family-base: "Segoe UI", Arial, sans-serif;
+$font-size-base: 16px;
+$font-size-sm: 12px;
+$font-size-icon: 24px;
+$font-size-badge: 8px;
+// ===============================
+// 🔹 Layout: Main container
+// ===============================
+$main-bg: #f7f7f7;
+$main-padding: 0;
+$main-gap: 0;
+// ===============================
+// 🔹 Page split
+// ===============================
+$page-left-width: 250px;
+$page-right-flex: 1;
+$page-content-flex: 1;
+$page-content-padding: 1rem;
+$page-content-bg: #f8f9fa;
+// ===============================
+// 🔹 Header / Menubar
+// ===============================
+$menubar-height: 72px;
+$menubar-padding-x: 50px;
+$menubar-logo-height-desktop: 40px;
+$menubar-logo-height-mobile: 32px;
+$menubar-logo-max-width: 120px;
+$menubar-link-gap-row: 15px;
+$menubar-link-gap-column: 0;
+$menubar-link-gap-icons: 10px;
+$menubar-box-shadow: -3px 13px 40px -28px rgba(66, 68, 90, 1);
+// ===============================
+// 🔹 Sidebar
+// ===============================
+$sidebar-width: $page-left-width;
+$sidebar-bg: #222;
+$sidebar-text-color: #fff;
+$sidebar-logo-height: 32px;
+$sidebar-padding: 16px;
+// 🔹 Sidebar nav
+$sidebar-nav-gap: 12px;
+$sidebar-nav-margin: 90px 0 15px 0;
+$sidebar-nav-padding: 0 5px 0 16px;
+$sidebar-nav-sub-padding: 15px 16px 10px 20px;
+$sidebar-nav-sub-margin: 0;
+$sidebar-nav-sub-icon-right: 5px;
+// 🔹 Sidebar nav link
+$sidebar-nav-link-color: rgb(179, 168, 168);
+$sidebar-nav-link-hover-color: #fff;
+$sidebar-nav-link-hover-weight: 500;
+$sidebar-nav-link-submenu-after-font-family: "Font Awesome 5 Free";
+$sidebar-nav-link-submenu-after-width: 1rem;
+$sidebar-nav-link-submenu-chevron-right: "\f105"; // fa-chevron-right
+$sidebar-nav-link-submenu-chevron-down: "\f107"; // fa-chevron-down
+// ===============================
+// 🔹 Footer
+// ===============================
+$footer-height: 60px;
+$footer-bg: #111;
+$footer-text-color: #eee;
+$footer-link-hover: orange;
+// ===============================
+// 🔹 Maps
+// ===============================
+$z-indexes: (
+    "modal": 5000,
+    "dropdown": 4000,
+    "header": 3000,
+    "sidebar": 2000,
+    "footer": 1000,
+    "default": 1,
+    "below": -1
+);
+$breakpoints: (
+    "xs": "(max-width: 575.98px)",
+    "sm": "(min-width: 576px)",
+    "md": "(min-width: 768px)",
+    "lg": "(min-width: 992px)",
+    "xl": "(min-width: 1200px)",
+    "xxl": "(min-width: 1400px)"
+);

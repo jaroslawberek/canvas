@@ -1,0 +1,17 @@
+@use 'variables' as *;
+
+// 🔹 Placeholdery
+
+%nav-link-base {
+  color: $color-text-base;
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: $font-size-base;
+  transition: opacity 1s ease-in;
+
+  &:hover {
+    opacity: 1;
+  }
+}
