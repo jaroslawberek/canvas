@@ -15,9 +15,7 @@ class Edytor {
     this.width = width;
     this.height = height;
     this.canvas = document.querySelector('#canvas');
-
-    this.canvas.width = window.innerWidth * 0.73;
-    this.canvas.height = window.innerHeight;
+    this.resizeCanvas();
     this.context2d = this.canvas.getContext('2d');
     this.bgColor = '#e7e5e5ff'; // domyślny kolor tła
     this.tittleSize = tittleSize;
@@ -61,7 +59,10 @@ class Edytor {
     this.init();
   }
   resizeCanvas() {
-    this.camera.resize(this.width, this.height);
+    const rect1 = this.canvas.getBoundingClientRect();
+    this.canvas.width = rect1.width;
+    this.canvas.height = rect1.height;
+    //this.camera.resize(this.width, this.height);
   }
 
   init() {

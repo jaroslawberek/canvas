@@ -13,76 +13,155 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
-        margin: 5px;
+        margin: 3px;
         padding: 0;
         overflow: hidden;
+        background: #f5f5f5;
+      }
+      header {
+        height: 160px;
+      }
+      .navbar {
+        /* height: 100%; */
+      }
+      .navbar-brand img {
+        height: 40px;
+        width: 40px;
+        margin-right: 10px;
+      }
+      .nav-tabs .nav-link {
+        color: #333;
+      }
+      .nav-tabs .nav-link.active {
+        background-color: #e9ecef;
+        border-color: #dee2e6 #dee2e6 #fff;
+        color: #0d6efd;
+      }
+      .tab-content {
+        height: 100%;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        padding: 5px 20px;
+      }
+      .row {
+        height: 100%;
+        width: 100%;
+        padding: 0px;
+        margin: 0px;
+      }
+      .col,
+      .col-9,
+      .col-4,
+      .col-3 {
+        height: 100%;
+        padding: 2px 0px;
+        margin: 0px;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        padding: 0;
+        margin: 0;
       }
       #canvas {
-        /* width: 70%; */
-        /* margin: 5px; */
-        display: block;
-        height: fit-content;
+        background-color: silver;
       }
       #canvas2 {
-        /* width: 30%; */
+        background-color: blue;
       }
       .canvas-content {
-        display: flex;
-        flex-direction: row;
-        min-height: calc(100vh - 160px);
+        padding: 0;
+        margin: 0px;
+        min-height: calc(100vh - 250px);
         overflow: hidden; /* 🔹 scrollbar w razie potrzeby */
-        background: #ddd;
+        background: white;
       }
-      nav {
-        height: 80px;
-      }
+
       footer {
         height: 80px;
+        padding: 0;
+        margin: 0;
       }
     </style>
   </head>
   <body class="">
-    <!-- <header>
-      <nav class="navbar navbar-expand-lg navbar-dark bg-black bg-primary">
-        <div class="container-fluid ">
-          <a class="navbar-brand" href="#">Navbar</a>                
-            <ul class="navbar-nav ">
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Dropdown
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                  <li><a class="dropdown-item" href="#">Action</a></li>
-                  <li><a class="dropdown-item" href="#">Another action</a></li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item" href="#">Something else here</a></li>
-                </ul>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
-              </li>
-            </ul>
-           
-          </div>
+    <header>
+      <nav class="navbar navbar-expand-lg bg-light border-bottom shadow-sm align-items-start">
+        <div class="d-flex flex-row w-100 px-3 justify-content-star">
+          <!-- logo po lewej -->
+          <a class="navbar-brand d-flex align-items-center me-5" href="#">
+            <img src="https://cdn-icons-png.flaticon.com/512/1822/1822899.png" alt="Logo" />
+            <span class="fw-bold text-primary">Tiles Editor</span>
+          </a>
+
+          <!-- zakładki po prawej -->
+          <ul class="nav nav-tabs" id="editorTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1" type="button" role="tab" aria-controls="tab1" aria-selected="true">
+                Zakładka 1
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" type="button" role="tab" aria-controls="tab2" aria-selected="false">
+                Zakładka 2
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab3-tab" data-bs-toggle="tab" data-bs-target="#tab3" type="button" role="tab" aria-controls="tab3" aria-selected="false">
+                Zakładka 3
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab4-tab" data-bs-toggle="tab" data-bs-target="#tab4" type="button" role="tab" aria-controls="tab4" aria-selected="false">
+                Zakładka 4
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab5-tab" data-bs-toggle="tab" data-bs-target="#tab5" type="button" role="tab" aria-controls="tab5" aria-selected="false">
+                Zakładka 5
+              </button>
+            </li>
+          </ul>
         </div>
       </nav>
-    </header> -->
+
+      <!-- 🔹 Panele treści -->
+      <div class="tab-content" id="editorTabsContent">
+        <div class="tab-pane fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
+          <h5>Wybrano Zakładkę 1</h5>
+        </div>
+        <div class="tab-pane fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
+          <h5>Wybrano Zakładkę 2</h5>
+        </div>
+        <div class="tab-pane fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
+          <h5>Wybrano Zakładkę 3</h5>
+        </div>
+        <div class="tab-pane fade" id="tab4" role="tabpanel" aria-labelledby="tab4-tab">
+          <h5>Wybrano Zakładkę 4</h5>
+        </div>
+        <div class="tab-pane fade" id="tab5" role="tabpanel" aria-labelledby="tab5-tab">
+          <h5>Wybrano Zakładkę 5</h5>
+        </div>
+      </div>
+    </header>
     <div class="canvas-content">
-      <canvas id="canvas"></canvas>
+      <div class="row">
+        <div class="col-9">
+          <canvas id="canvas"></canvas>
+        </div>
+        <div class="col-3">
+          <canvas id="canvas2"></canvas>
+        </div>
+      </div>
+
       <!-- <div class=""> -->
-      <canvas id="canvas2"></canvas>
+
       <!-- </div> -->
     </div>
 
-    <!-- <footer class=" navbar-dark bg-black ">
-      Stopka
-    </footer> -->
+    <footer class="navbar-dark bg-black">Stopka</footer>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
