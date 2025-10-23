@@ -178,8 +178,8 @@ export class TileObject {
     const worldMouseY = camera ? mouseY / camera.scale + camera.y : mouseX;
     //Utils.cl(buffer);
 
-    for (let tx = 0; tx < width; tx++) {
-      for (let ty = 0; ty < height; ty++) {
+    for (let tx = 0; tx < height; tx++) {
+      for (let ty = 0; ty < width; ty++) {
         if (buffer[tx][ty] === null) continue;
 
         const y = ty * tileH;

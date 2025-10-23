@@ -7,11 +7,13 @@ import { TileObject } from './TitleObj.js';
 import { eventBus } from './classes/EventBus.js';
 import { Queue } from './classes/queue.js';
 import { ShortcutManager } from './classes/ShortcutManager.js';
+import { LevelStorageManager } from './classes/LevelStorageManager.js';
+import { Level } from './Level.js';
 
 class Edytor {
-  constructor(tittleSize = 16, width = 1550, height = 1550) {
-    this.wordWidth = 2000;
-    this.wordHeight = 2000;
+  constructor(tittleSize = 16, width = 1500, height = 100) {
+    this.wordWidth = width * tittleSize;
+    this.wordHeight = height * tittleSize;
     this.width = width;
     this.height = height;
     this.canvas = document.querySelector('#canvas');
@@ -44,6 +46,10 @@ class Edytor {
     // 👇 ważne — związanie kontekstu
     this.appLoop = this.appLoop.bind(this);
     this.camera = new Camera(this.width, this.height, this.wordWidth, this.wordHeight);
+    this.storage = new LevelStorageManager();
+    this.currentLevel = null;
+    this.levelListEl = document.getElementById('levelListEl');
+    const myModal = null;
     this.context = {
       canvas: this.canvas,
       ctx: this.context2d,
@@ -77,14 +83,28 @@ class Edytor {
     this.objBuffer = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     this.grid = new Grid(this.tittleSize, this.width, this.height);
     this.tileObject = new TileObject(this.tittleSize, this.height, this.width);
+    const btAddlevel = document.querySelector('.addLevelBtn');
+    btAddlevel.addEventListener('click', () => {
+      const nameInput = document.getElementById('levelName');
+      const widthInput = document.getElementById('levelWidth');
+      const heightInput = document.getElementById('levelHeight');
+      const tileSizeInput = document.getElementById('tileSize');
+      this.newLevel(
+        nameInput.value,
+        parseInt(widthInput.value),
+        parseInt(heightInput.value),
+        parseInt(tileSizeInput.value)
+      );
+    });
     this.registerShortcuts();
 
     // Evet init
     eventBus.on('editor:canvasActive', this.tileObject.onEditorCanvasActive.bind(this.tileObject));
     eventBus.on('tileObject:canvasActive', this.onTileObjectCanvasActive.bind(this));
     eventBus.on('tileObject:tilesSelected', this.onTileObjectSelectedTiles.bind(this));
-    // window.addEventListener("m")
-
+    this.renderLevelList();
+    this.myModal = new bootstrap.Modal(document.getElementById('modalId'));
+    this.myModal.show();
     window.requestAnimationFrame(this.appLoop);
   }
 
@@ -97,6 +117,7 @@ class Edytor {
     const keys = this.input.keys;
     const cam = this.camera;
     this.shortcuts.register('Control+z', () => this.rollbackTiles(), 200, 'Undo (Cofnij)');
+    this.shortcuts.register('Control+s', () => this.saveCurrent(), 0, 'Save current level (Zapisz aktualny poziom)');
     this.shortcuts.register('Escape', () => this.cancelSelection(), 100, 'Cancel selection (Anuluj zaznaczenie)');
     // Zoom in
     this.shortcuts.register(
@@ -285,8 +306,8 @@ class Edytor {
     let absY = -1;
     let temp = Array.from({ length: this.height }, () => Array(this.width).fill(null));
     let { titleX, titleY, x, y } = TileObject.getTitleCoordinate(mouseX, mouseY, tSize, this.camera);
-    for (let ty = 0; ty < this.width; ty++) {
-      for (let tx = 0; tx < this.height; tx++) {
+    for (let ty = 0; ty < this.height; ty++) {
+      for (let tx = 0; tx < this.width; tx++) {
         if (!this.objBuffer[ty][tx]) continue;
         if (absX == -1 && absY == -1) {
           absX = Math.abs(titleX - tx);
@@ -305,11 +326,11 @@ class Edytor {
   insertBuffer() {
     // Utils.cl(this.objBuffer);
     const oldTile = [];
-    for (let tx = 0; tx < this.width; tx++) {
-      for (let ty = 0; ty < this.height; ty++) {
+    for (let tx = 0; tx < this.height; tx++) {
+      for (let ty = 0; ty < this.width; ty++) {
         if (!this.objBuffer[tx][ty]) continue;
         // Utils.cl("insert buffer " +  this.objBuffer[tx][ty])
-        oldTile.push({ ty: tx, tx: ty, tileObj: this.objGrid[ty][tx] });
+        oldTile.push({ ty: tx, tx: ty, tileObj: this.objGrid[tx][ty] });
         this.objGrid[tx][ty] = this.objBuffer[tx][ty];
         //   Utils.cl( this.objGrid[tx][ty])
       }
@@ -321,12 +342,12 @@ class Edytor {
   }
   resolveSeletedArea() {
     const oldTile = [];
-    for (let tx = 0; tx < this.width; tx++) {
-      for (let ty = 0; ty < this.height; ty++) {
+    for (let tx = 0; tx < this.height; tx++) {
+      for (let ty = 0; ty < this.width; ty++) {
         if (!this.selectedGrid[tx][ty]) continue;
         if (this.selectPurpose === 'clear') this.objGrid[tx][ty] = null;
         else if (this.selectPurpose === 'insert') {
-          oldTile.push({ ty: tx, tx: ty, tileObj: this.objGrid[ty][tx] });
+          oldTile.push({ ty: tx, tx: ty, tileObj: this.objGrid[tx][ty] });
           this.objGrid[tx][ty] = this.tileObject.selectedTile.tableindex;
         } else if ((this.selectPurpose = 'select')) {
           this.objBuffer[tx][ty] = this.objGrid[tx][ty];
@@ -340,8 +361,8 @@ class Edytor {
 
   drawTitleGrid() {
     const ctx = this.context2d;
-    for (let tx = 0; tx < this.width; tx++) {
-      for (let ty = 0; ty < this.height; ty++) {
+    for (let tx = 0; tx < this.height; tx++) {
+      for (let ty = 0; ty < this.width; ty++) {
         if (this.objGrid[tx][ty] === null) continue;
         let y = ty === 0 ? 0 : ty * this.tittleSize;
         let x = tx === 0 ? 0 : tx * this.tittleSize;
@@ -359,8 +380,9 @@ class Edytor {
   }
   drawBuffer() {
     const ctx = this.context2d;
-    for (let tx = 0; tx < this.width; tx++) {
-      for (let ty = 0; ty < this.height; ty++) {
+    for (let tx = 0; tx < this.height; tx++) {
+      for (let ty = 0; ty < this.width; ty++) {
+        //Utils.cl(`${tx} ${ty}`);
         if (this.objBuffer[tx][ty] === null) continue;
         let y = ty === 0 ? 0 : ty * this.tittleSize;
         let x = tx === 0 ? 0 : tx * this.tittleSize;
@@ -473,6 +495,110 @@ class Edytor {
     if (this.objGrid[titleY][titleX] > -1) this.objGrid[titleY][titleX] = null;
   }
 
+  newLevel(name, width = 128, height = 128, tileSize = 16) {
+    this.currentLevel = new Level();
+    this.currentLevel.create(name, width, height, tileSize, this.objGrid);
+    this.saveCurrent(); // od razu zapisuje pusty poziom z miniaturą
+    console.log('Utworzono nowy poziom:', this.currentLevel.name);
+    this.myModal.hide();
+  }
+
+  loadLevel(name) {
+    this.currentLevel = this.storage.load(name);
+    if (this.currentLevel === null) return false;
+    this.objGrid = this.currentLevel.tiles;
+    this.width = this.currentLevel.width;
+    this.height = this.currentLevel.height;
+    console.log('Wczytano poziom: ', this.currentLevel.name);
+    this.myModal.hide();
+    //return this.currentLevel != null ? true : false;
+  }
+
+  saveCurrent() {
+    if (!this.currentLevel) return alert('Brak aktywnego poziomu!');
+    const canvas = this.canvas;
+
+    // tworzymy miniaturę 128×128 (nawet jeśli canvas jest większy)
+    const thumb = new OffscreenCanvas(128, 128);
+    const ctx = thumb.getContext('2d');
+    ctx.drawImage(canvas, 0, 0, 128, 128);
+
+    thumb.convertToBlob({ type: 'image/jpeg', quality: 0.6 }).then(async (blob) => {
+      const preview = await Utils.blobToBase64(blob);
+      this.currentLevel.preview = preview;
+      this.storage.save(this.currentLevel);
+      //this.renderLevelList(); // odśwież listę po zapisie
+      console.log('Zapisano poziom z miniaturą:', this.currentLevel.name);
+    });
+  }
+
+  deleteLevel(name) {
+    this.storage.delete(name);
+    this.renderLevelList();
+  }
+
+  renderLevelList() {
+    const modalElement = document.getElementById('modalId');
+    const levelsContainer = document.getElementById('levelsContainer');
+    const btnNewLevel = document.getElementById('btnNewLevel');
+    const storageSize = document.getElementById('storageSize');
+    const levels = this.storage.getAll();
+    const names = Object.keys(levels);
+    levelsContainer.innerHTML = '';
+
+    // Oblicz zajętość localStorage
+    const used = (JSON.stringify(localStorage).length / 1024 / 1024).toFixed(2);
+    storageSize.textContent = `Zajętość pamięci: ${used} MB`;
+
+    if (names.length === 0) {
+      levelsContainer.innerHTML = `<p class="text-center text-muted">Brak zapisanych poziomów.</p>`;
+      return;
+    }
+
+    names.forEach((name) => {
+      const lvl = levels[name];
+      const card = document.createElement('div');
+      card.className = 'col';
+
+      card.innerHTML = `
+        <div class="card shadow-sm level-card">
+          <img src="${lvl.preview || 'https://placehold.co/200x120/cccccc/555555?text=Brak+miniatury'}"
+               class="card-img-top" alt="Preview">
+          <div class="card-body">
+            <h6 class="fw-bold mb-1">${lvl.name}</h6>
+            <small class="text-muted">${new Date(lvl.modified).toLocaleString()}</small>
+            <div class="d-flex justify-content-between mt-2">
+              <button class="btn btn-sm btn-primary btnLoad" data-name="${lvl.name}">
+                <i class="bi bi-upload"></i> Wczytaj
+              </button>
+              <button class="btn btn-sm btn-danger btnDelete" data-name="${lvl.name}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      levelsContainer.appendChild(card);
+    });
+
+    // Obsługa przycisków
+    levelsContainer.querySelectorAll('.btnLoad').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const name = e.target.closest('button').dataset.name;
+        this.loadLevel(name);
+        this.myModal.hide();
+      });
+    });
+
+    levelsContainer.querySelectorAll('.btnDelete').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const name = e.target.closest('button').dataset.name;
+        if (confirm(`Usunąć poziom "${name}"?`)) {
+          storage.delete(name);
+          renderLevels();
+        }
+      });
+    });
+  }
   // getTitleCoordinate(x, y, tSize) {
   //   const titleX = Math.floor(x / tSize);
   //   const titleY = Math.floor(y / tSize);
